@@ -128,6 +128,23 @@ See [開發新專案整理.md](開發新專案整理.md) for the full step-by-st
 #file:.github/prompts/csharp-xunit.prompt.md 幫我為 #sym:MyService 產生單元測試
 ```
 
+## Experimental modes (CLI only)
+
+There are a couple of interactive features exposed by the **GitHub Copilot CLI** (they don’t work from within VS Code itself):
+
+- **Autopilot** – run the Copilot binary with extra flags to let the assistant drive its own session:
+  ```bash
+  copilot --yolo --experimental
+  ```
+  After the CLI starts you can hit `Shift+Tab` to toggle the autopilot overlay.
+
+- **艦隊模式 (Fleet mode)** – from the CLI prompt you can spin up a multi‑agent team using the `/fleet` command:
+  ```
+  /fleet [PROMPT]
+  ```
+  where `[PROMPT]` is the instruction you want the fleet to follow.
+
+
 ## Requirements
 
 - [VS Code](https://code.visualstudio.com/) with [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) and [GitHub Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)
