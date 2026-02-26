@@ -1,6 +1,6 @@
 ---
 name: csharp-xunit
-description: Write effective XUnit unit tests for C#/.NET projects, including data-driven tests with Theory/InlineData/MemberData/ClassData, mocking, assertions, and test organization. Use when: (1) Creating or updating XUnit test projects, (2) Writing Fact or Theory-based unit tests, (3) Implementing data-driven tests with InlineData, MemberData, or ClassData, (4) Setting up test fixtures with IClassFixture or ICollectionFixture, (5) Organizing test structure with Arrange-Act-Assert pattern, or (6) Configuring mocking and test isolation in .NET test projects.
+description: "Write effective XUnit unit tests for C#/.NET projects, including data-driven tests with Theory/InlineData/MemberData/ClassData, mocking, assertions, and test organization. Use when: (1) Creating or updating XUnit test projects, (2) Writing Fact or Theory-based unit tests, (3) Implementing data-driven tests with InlineData, MemberData, or ClassData, (4) Setting up test fixtures with IClassFixture or ICollectionFixture, (5) Organizing test structure with Arrange-Act-Assert pattern, or (6) Configuring mocking and test isolation in .NET test projects."
 ---
 
 # XUnit Best Practices
