@@ -1,7 +1,7 @@
 # `skills/skill-creator` 最近 5 個變更波次整理報告
 
 本報告整理 `anthropics/skills` 儲存庫（預設分支：`main`）中 `skills/skill-creator` 的最近 5 個相關變更波次。`skill-creator` 是一個用來建立、修改、評估與優化其他 skills 的 meta-skill；本文件僅根據已提供的 canonical facts 撰寫，方便直接閱讀與後續追蹤。  
-檔案位置：`/Users/qiuzili/project-dev-guide/skill-creator-latest-5-commits-report.md`
+
 
 ## 方法與限制說明
 
