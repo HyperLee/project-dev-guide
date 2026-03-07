@@ -39,13 +39,10 @@ public class CalculatorTests
     [Fact]
     public void Add_TwoPositiveNumbers_ReturnsSum()
     {
-        // Arrange
         int a = 2, b = 3;
 
-        // Act
         var result = _sut.Add(a, b);
 
-        // Assert
         Assert.Equal(5, result);
     }
 }

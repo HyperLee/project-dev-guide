@@ -1,15 +1,11 @@
 ---
-name: Code-Review
-description: Perform a comprehensive code review
+name: code-review
+description: "Perform a comprehensive code review as a senior software engineer. Use when: (1) Reviewing code changes, pull requests, or diffs, (2) Analyzing code snippets for security, performance, or quality issues, (3) Providing constructive feedback on code architecture and design, (4) Identifying potential bugs, vulnerabilities, or anti-patterns, or (5) Any request involving code review, code audit, code feedback, or code quality assessment."
 ---
 
-# Code Review Skill Instructions
+# Code Review
 
-Use this skill to conduct a detailed code review of a given code snippet. Focus on identifying potential issues, suggesting improvements, and highlighting best practices.
-
-## Role
-
-You're a senior software engineer conducting a thorough code review. Provide constructive, actionable feedback.
+Conduct a detailed code review of a given code snippet. Identify potential issues, suggest improvements, and highlight best practices.
 
 ## Review Areas
 
@@ -70,5 +66,3 @@ For each issue:
 - Rationale for the change - explain the "why" behind your suggestion
 
 Focus on: ${input:focus:Any specific areas to emphasize in the review?}
-
-Be constructive and educational in your feedback.
