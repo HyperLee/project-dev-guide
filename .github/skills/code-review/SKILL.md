@@ -19,7 +19,10 @@ Before writing any feedback, gather the context you need to review effectively:
 - **Identify the language, framework, and paradigm** so your feedback matches the ecosystem's conventions and idioms.
 - **Understand the intent** — what is this code trying to accomplish? Read commit messages, PR descriptions, or surrounding code if available.
 - **Check related files** — use Grep and Glob to find callers, tests, type definitions, or configuration files that interact with the code under review. Understanding how the code fits into the larger system is critical for catching integration issues.
+- **Check for team conventions** — look for `.editorconfig`, `CONTRIBUTING.md`, style guides, linter configs (`.eslintrc`, `.prettierrc`, `stylecop.json`), or instructions files in the project. When they exist, align your feedback with the team's established conventions rather than imposing generic preferences. Don't flag style issues that the team has explicitly chosen differently.
 - **For PR/diff reviews**: read the full diff context, not just the changed lines. Understand what existed before and what changed. Use `git diff` or `git log` when relevant.
+
+**Risk-based depth allocation**: Before diving into analysis, quickly assess the risk profile of the code. Code that handles authentication, payments, user data, cryptography, or system commands warrants deeper security and correctness scrutiny — even if it's only 20 lines. Conversely, a 400-line UI layout change may only need a surface-level scan. Spend your analysis time proportionally to the risk, not just the line count.
 
 ### Step 2: Analyze the Code
 
@@ -68,8 +71,9 @@ Examine the code systematically across these areas. Prioritize based on the code
 When performing analysis, consult these references for comprehensive coverage:
 
 - **`references/security-checklist.md`** — Read when reviewing code that handles user input, authentication, data storage, or external communication. Provides a systematic checklist to avoid missing critical security issues.
-- **`references/language-patterns.md`** — Read when reviewing code in JavaScript/TypeScript, Python, Go, Java, or Rust. Contains common anti-patterns and idiomatic fixes for each language.
+- **`references/language-patterns.md`** — Read when reviewing code in JavaScript/TypeScript, Python, Go, Java, C#, or Rust. Contains common anti-patterns and idiomatic fixes for each language.
 - **`references/performance-patterns.md`** — Read when performance is a concern or the focus area. Covers algorithm, database, memory, async, and frontend performance patterns.
+- **`references/testing-patterns.md`** — Read when reviewing test code or when test quality is a focus. Covers common test anti-patterns (assertion-free tests, excessive mocking, flaky tests) and language-specific test conventions.
 
 ### Step 3: Write the Review
 
@@ -222,6 +226,56 @@ db.row_factory = sqlite3.Row  # set once at connection time
 - Critical issues: 2
 - Suggestions: 2
 - Good practices identified: 1
+
+---
+
+Here's a shorter example showing how to review a **well-written** piece of code without manufacturing problems:
+
+**Input**: Any issues with this?
+
+```typescript
+export function debounce<T extends (...args: unknown[]) => void>(
+  fn: T,
+  ms: number
+): (...args: Parameters<T>) => void {
+  let timer: ReturnType<typeof setTimeout>;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
+}
+```
+
+**Review output**:
+
+## Code Review: `debounce()` utility
+
+### Summary
+A clean, generic debounce implementation. Well-typed, concise, and correct for standard use cases. Ready to use as-is.
+
+### 🟡 Suggestions
+
+**1. Consider a cancellation mechanism**
+
+Callers currently have no way to cancel a pending debounced call (e.g., on component unmount). Returning an object with a `cancel` method is a common pattern:
+```typescript
+return Object.assign(
+  (...args: Parameters<T>) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); },
+  { cancel: () => clearTimeout(timer) }
+);
+```
+
+### ✅ Good Practices
+
+**1. Proper generic typing**: `Parameters<T>` preserves the original function's parameter types through the wrapper — callers get full type safety.
+
+**2. `ReturnType<typeof setTimeout>`**: Portable across Node and browser environments, avoiding the common `NodeJS.Timeout` vs `number` mismatch.
+
+### Metrics
+- Files reviewed: 1
+- Critical issues: 0
+- Suggestions: 1
+- Good practices identified: 2
 
 ---
 

@@ -96,6 +96,21 @@
         "Review follows the structured output format even for mostly-positive reviews",
         "Review does not manufacture false critical issues just to fill sections"
       ]
+    },
+    {
+      "id": 8,
+      "prompt": "Review this C# ASP.NET Core controller:\n\nusing Microsoft.AspNetCore.Mvc;\n\nnamespace MyApp.Controllers\n{\n    [ApiController]\n    [Route(\"api/[controller]\")]\n    public class OrdersController : ControllerBase\n    {\n        private static List<Order> _orders = new List<Order>();\n\n        [HttpPost]\n        public async Task<IActionResult> CreateOrder([FromBody] Order order)\n        {\n            order.Id = Guid.NewGuid().ToString();\n            order.CreatedAt = DateTime.Now;\n            _orders.Add(order);\n\n            var client = new HttpClient();\n            var response = await client.PostAsJsonAsync(\"https://payments.example.com/charge\", new { order.Amount });\n            if (response == null)\n                return BadRequest();\n\n            return Ok(order);\n        }\n\n        [HttpGet(\"{id}\")]\n        public IActionResult GetOrder(string id)\n        {\n            var order = _orders.FirstOrDefault(o => o.Id == id);\n            return Ok(order);\n        }\n    }\n}",
+      "expected_output": "Should identify mutable static state (thread-unsafe shared list), HttpClient instantiation per request (socket exhaustion), DateTime.Now instead of UTC, block-scoped namespace, missing null check on GetOrder, response.ok not checked",
+      "expectations": [
+        "Review identifies the mutable static List<Order> as a 🔴 Critical concurrency issue (race conditions across requests, data shared between users)",
+        "Review identifies creating new HttpClient() per request as a resource issue (socket exhaustion) and suggests IHttpClientFactory",
+        "Review notes DateTime.Now should be DateTime.UtcNow for server-side code",
+        "Review identifies that GetOrder returns Ok(null) when order is not found instead of NotFound()",
+        "Review mentions the block-scoped namespace should be file-scoped per C# conventions",
+        "Review identifies that the payment response is not properly validated (response.IsSuccessStatusCode not checked)",
+        "Review provides concrete C# code fixes",
+        "Review follows the structured output template with severity classifications"
+      ]
     }
   ]
 }

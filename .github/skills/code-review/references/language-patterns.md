@@ -86,3 +86,32 @@ When reviewing code, use this reference for language-specific pitfalls and idiom
 - Prefer `&str` over `String` in function parameters
 - Use `impl Trait` for return types when the concrete type is an implementation detail
 - Use `derive` macros for common traits
+
+## C#
+
+### Common Anti-Patterns
+- **`== null` instead of `is null`**: The `==` operator can be overloaded, making null checks unreliable. Always use `is null` or `is not null` for null comparisons — they cannot be overridden and are more predictable.
+- **Forgetting to dispose resources**: `SqlConnection`, `HttpClient`, `StreamReader` and other `IDisposable` types must be disposed. Use `using` declarations or `using` blocks to ensure cleanup on all code paths, including exceptions.
+- **`async void` methods**: These are fire-and-forget — exceptions crash the process instead of being caught. Only use `async void` for event handlers. Everything else should return `Task` or `Task<T>`.
+- **Blocking on async code**: Calling `.Result` or `.Wait()` on a Task causes deadlocks in UI and ASP.NET contexts. Use `await` all the way through the call chain.
+- **Catching `Exception` broadly**: `catch (Exception ex)` hides specific error types. Catch the most specific exception type possible, and let unexpected exceptions propagate.
+- **String concatenation in loops**: `+=` on strings in a loop is O(n^2). Use `StringBuilder` or `string.Join()`.
+- **Mutable static state**: Static fields shared across requests in ASP.NET cause race conditions and data leaks between users. Use dependency injection with appropriate lifetimes instead.
+- **Missing nullable reference type annotations**: Not enabling `<Nullable>enable</Nullable>` or ignoring warnings leads to `NullReferenceException` at runtime. Trust the type system and declare nullability explicitly.
+
+### Idiomatic Patterns
+- Use file-scoped namespace declarations (`namespace Foo;` instead of `namespace Foo { ... }`)
+- Prefer pattern matching and `switch` expressions over chains of `if`/`else`
+- Use `nameof()` instead of string literals when referring to member names (refactoring-safe)
+- Use `record` types for immutable data transfer objects
+- Use collection expressions (`[1, 2, 3]`) in C# 12+ instead of `new List<int> { 1, 2, 3 }`
+- Naming: PascalCase for types/methods/properties, camelCase for locals/parameters, `_camelCase` for private fields, `I` prefix for interfaces
+- Prefer `var` only when the type is apparent from the right-hand side; use explicit types otherwise
+- Use primary constructors (C# 12+) for simple dependency injection
+
+### Project Conventions (this project)
+- Follow `.editorconfig` formatting: 4-space indent, CRLF line endings, Allman brace style (brace on new line)
+- System usings sorted first, import groups separated
+- Fields marked `readonly` where possible (enforced as warning)
+- Prefer simple `using` statements over `using` blocks
+- Use expression-bodied members for accessors, indexers, and lambdas — but NOT for constructors, methods, or operators
