@@ -1,6 +1,6 @@
----
+﻿---
 name: code-review
-description: "Perform a thorough, senior-engineer-level code review with actionable feedback. Make sure to use this skill whenever the user asks to review code, check a PR or merge request, look at a diff, audit code quality, inspect code for bugs or vulnerabilities, or asks anything like 'is this code good?', 'what can I improve?', 'check this implementation', 'help me review', 'any issues with this code?', or any variation of code feedback, code inspection, or code quality assessment — even if they don't explicitly say 'code review'. Also use when the user pastes a code snippet and asks for opinions, feedback, or improvement suggestions."
+description: "Perform a thorough, senior-engineer-level code review with actionable feedback. Use whenever the user asks for code review, PR review, diff inspection, code audit, quality assessment, or asks for feedback on pasted code — even without explicitly saying 'code review'. Also triggers when the user pastes code and asks for opinions, improvement suggestions, or whether it's ready to merge."
 ---
 
 # Code Review
@@ -63,6 +63,14 @@ Examine the code systematically across these areas. Prioritize based on the code
 - Do tests actually assert meaningful behavior, not just that code runs?
 - Test readability — can someone understand expected behavior from the tests alone?
 
+#### Reference Files
+
+When performing analysis, consult these references for comprehensive coverage:
+
+- **`references/security-checklist.md`** — Read when reviewing code that handles user input, authentication, data storage, or external communication. Provides a systematic checklist to avoid missing critical security issues.
+- **`references/language-patterns.md`** — Read when reviewing code in JavaScript/TypeScript, Python, Go, Java, or Rust. Contains common anti-patterns and idiomatic fixes for each language.
+- **`references/performance-patterns.md`** — Read when performance is a concern or the focus area. Covers algorithm, database, memory, async, and frontend performance patterns.
+
 ### Step 3: Write the Review
 
 Structure your output using the template below. Adapt the depth to the size of the change:
@@ -72,7 +80,7 @@ Structure your output using the template below. Adapt the depth to the size of t
 
 ## Output Template
 
-ALWAYS structure your review using this format:
+Structure every review using this format — consistency makes reviews easier to scan and act on:
 
 ```
 ## Code Review: [file name, PR title, or brief description]
@@ -90,10 +98,15 @@ ALWAYS structure your review using this format:
 [Specific things done well — reinforce good patterns so the author knows what to keep doing]
 
 ### Metrics
+- Files reviewed: N
 - Critical issues: N
 - Suggestions: N
 - Good practices identified: N
 ```
+
+**When there are no issues**: If the code is well-written and you find no critical issues or suggestions, still produce a full review. Write the Summary with your positive assessment, skip the Critical Issues and Suggestions sections (or write "None found"), and focus on the Good Practices section — there's always something worth reinforcing.
+
+**Multi-file reviews**: For PRs or reviews spanning many files, organize findings by severity first (all criticals together, then all suggestions), not by file. Mention the file path in each finding so the author can locate it. In the Summary, note the overall scope (e.g., "Reviewed 12 files across the auth module").
 
 ## Severity Classification
 
@@ -129,6 +142,7 @@ Each piece of feedback should follow these principles, because code review is a 
 - **Show the fix**: Provide a concrete code example of the recommended change. When multiple valid approaches exist, briefly mention alternatives and why you prefer one.
 - **Stay constructive**: Frame feedback as collaborative improvement. Use "Consider..." or "This could be improved by..." rather than "This is wrong" or "You should know better."
 - **Praise intentionally**: When highlighting good practices, be specific about WHY it's good. "Good use of parameterized queries here — this correctly prevents SQL injection" teaches more than "Looks good."
+- **Don't overwhelm**: When there are many issues, focus on the most impactful 5-7 findings. Mention that additional minor issues exist but prioritize what matters most — a review with 20+ items is likely to be ignored entirely.
 
 ## Example
 
@@ -220,5 +234,19 @@ When reviewing code, keep these additional aspects in mind when they are relevan
 - **Logging & observability**: Are errors logged with enough context to debug in production?
 - **Configuration & secrets**: Are secrets hardcoded? Are config values properly externalized?
 - **Dependency risks**: Are new dependencies well-maintained, licensed appropriately, not excessive for the need?
+
+## Edge Cases
+
+Handle these situations explicitly rather than guessing:
+
+- **No issues found**: If the code is clean, say so clearly. Produce a review focused on Good Practices and state in the Summary that no critical issues or suggestions were found. Don't manufacture problems to fill sections.
+- **Incomplete code snippets**: If you don't have enough context to assess something fully, mention what assumptions you're making and ask the author for clarification rather than guessing wrong.
+- **Very large files (>500 lines)**: State which sections you reviewed in depth vs. scanned. Prioritize the most complex or risky sections for deep review.
+- **Configuration files (YAML, JSON, TOML, Dockerfile)**: Focus on security (exposed secrets, insecure defaults), correctness (syntax, valid values), and operational concerns rather than typical code quality patterns.
+- **Multi-language files (HTML + JS + CSS, JSX)**: Organize your review by concern area (security, correctness, performance) rather than by language, since issues often span languages.
+
+## Focus Area Parameter
+
+When the user specifies a focus area via the input below, dedicate roughly 60% of your analysis depth to that area while still performing a baseline check across all other areas. For example, if the focus is "security", do a thorough security audit consulting `references/security-checklist.md`, while still noting obvious correctness or performance issues you spot along the way.
 
 Focus on: ${input:focus:Any specific areas to emphasize? (e.g., security, performance, error handling, testing, architecture, concurrency)}

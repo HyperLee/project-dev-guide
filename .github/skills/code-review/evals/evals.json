@@ -1,17 +1,18 @@
-{
+﻿{
   "skill_name": "code-review",
   "evals": [
     {
       "id": 1,
-      "prompt": "Review this Python function:\n\ndef get_user(user_id):\n    query = f\"SELECT * FROM users WHERE id = {user_id}\"\n    result = db.execute(query).fetchone()\n    return {\"name\": result[0], \"email\": result[1]}",
-      "expected_output": "Should identify SQL injection as critical, unhandled None result, and suggest parameterized queries with code fix",
+      "prompt": "Review this Python API endpoint:\n\nimport os\nimport pickle\nfrom flask import Flask, request, jsonify\n\napp = Flask(__name__)\n\n@app.route('/api/process', methods=['POST'])\ndef process_data():\n    data = pickle.loads(request.data)\n    filename = request.args.get('output', 'result.txt')\n    filepath = os.path.join('/tmp/outputs', filename)\n    with open(filepath, 'w') as f:\n        f.write(str(data))\n    return jsonify({'status': 'ok', 'file': filepath})",
+      "expected_output": "Should identify unsafe pickle deserialization as critical, path traversal via filename, missing input validation, and exposing internal file path in response",
       "expectations": [
-        "Review identifies SQL injection vulnerability and classifies it as 🔴 Critical",
-        "Review suggests parameterized query as the fix with a code example",
-        "Review identifies the risk of NoneType error when no user is found",
-        "Review mentions that SELECT * is suboptimal and suggests specifying columns",
-        "Review follows the output template with Summary, Critical Issues, Suggestions, and Metrics sections",
-        "Review provides specific line references for each issue"
+        "Review identifies pickle.loads on untrusted user input as a 🔴 Critical security vulnerability (arbitrary code execution)",
+        "Review identifies path traversal risk in the output filename parameter",
+        "Review suggests using a safe deserialization format like JSON instead of pickle",
+        "Review notes that the response exposes internal server file paths",
+        "Review follows the output template with Summary, Critical Issues, Suggestions, Good Practices, and Metrics sections",
+        "Review provides concrete code fixes with examples",
+        "Review identifies at least one Good Practice or positive aspect of the code"
       ]
     },
     {
@@ -24,7 +25,8 @@
         "Review identifies the missing key prop in the .map() JSX",
         "Review suggests adding search and users to the useEffect dependency array",
         "Review provides corrected code examples",
-        "Review uses the structured output format with severity classifications"
+        "Review uses the structured output format with severity classifications",
+        "Review mentions at least one good practice (e.g., controlled input pattern, component decomposition)"
       ]
     },
     {
@@ -38,7 +40,61 @@
         "Review mentions the need for request body size limits to prevent DoS",
         "Review identifies that err.Error() on line 4 exposes internal error details to users",
         "Review classifies the path traversal as 🔴 Critical",
-        "Review provides concrete Go code fixes"
+        "Review provides concrete Go code fixes",
+        "Review identifies at least one good practice (e.g., early return pattern on error)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Review this Java Spring REST controller:\n\n@RestController\n@RequestMapping(\"/api/users\")\npublic class UserController {\n\n    @Autowired\n    private UserRepository userRepo;\n\n    @GetMapping(\"/{id}\")\n    public User getUser(@PathVariable Long id) {\n        return userRepo.findById(id).get();\n    }\n\n    @PostMapping\n    public User createUser(@RequestBody User user) {\n        user.setRole(\"ADMIN\");\n        return userRepo.save(user);\n    }\n\n    @DeleteMapping(\"/{id}\")\n    public void deleteUser(@PathVariable Long id) {\n        userRepo.deleteById(id);\n    }\n}",
+      "expected_output": "Should identify .get() without isPresent check, hardcoded ADMIN role assignment, missing input validation, missing authorization, and no error handling",
+      "expectations": [
+        "Review identifies that .get() on Optional without checking isPresent will throw NoSuchElementException",
+        "Review identifies the hardcoded ADMIN role assignment as a critical security issue (privilege escalation)",
+        "Review notes the absence of authorization checks on destructive operations (delete endpoint)",
+        "Review mentions missing @Valid or input validation on the @RequestBody",
+        "Review classifies at least one issue as 🔴 Critical",
+        "Review provides concrete Java code fixes",
+        "Review follows the structured output template"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Look at this TypeScript function and tell me what you think:\n\nasync function fetchUserData(userId: string): Promise<any> {\n  const response = await fetch(`/api/users/${userId}`);\n  const data = await response.json();\n\n  const orders = await fetch(`/api/orders?user=${userId}`);\n  const orderData = await orders.json();\n\n  const reviews = await fetch(`/api/reviews?user=${userId}`);\n  const reviewData = await reviews.json();\n\n  return {\n    ...data,\n    orders: orderData,\n    reviews: reviewData,\n    fullName: data.firstName + ' ' + data.lastName,\n    orderTotal: orderData.reduce((sum: number, o: any) => sum + o.amount, 0)\n  };\n}",
+      "expected_output": "Should identify sequential awaits that could be parallel, Promise<any> return type, missing error handling for fetch failures, missing response.ok checks",
+      "expectations": [
+        "Review identifies that the three sequential fetch calls could run in parallel with Promise.all",
+        "Review identifies the use of 'any' type as a code quality issue and suggests a proper interface/type",
+        "Review notes that response.ok is not checked — fetch doesn't throw on HTTP errors like 404 or 500",
+        "Review mentions that the function has no error handling (try/catch or .catch)",
+        "Review provides a corrected code example showing Promise.all pattern",
+        "Review uses the severity classification system (Critical/Suggestions/Good Practices)"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Review this PR diff for a configuration change:\n\n```diff\n--- a/docker-compose.yml\n+++ b/docker-compose.yml\n@@ -12,6 +12,14 @@ services:\n     environment:\n       - DATABASE_URL=postgresql://app:app123@db:5432/myapp\n       - REDIS_URL=redis://cache:6379\n+      - JWT_SECRET=super-secret-key-12345\n+      - AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\n+      - AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n+      - DEBUG=true\n+      - CORS_ORIGIN=*\n     ports:\n       - \"3000:3000\"\n+      - \"5432:5432\"\n+      - \"6379:6379\"\n```",
+      "expected_output": "Should identify hardcoded secrets (JWT, AWS keys), exposed database and Redis ports, CORS wildcard, debug mode enabled, and existing DATABASE_URL credential issue",
+      "expectations": [
+        "Review identifies hardcoded AWS credentials and JWT secret as 🔴 Critical security issues",
+        "Review identifies that database port 5432 and Redis port 6379 are exposed publicly",
+        "Review flags CORS_ORIGIN=* as a security concern",
+        "Review notes DEBUG=true should not be in production configuration",
+        "Review suggests using environment variables, secrets management, or .env files instead of hardcoded values",
+        "Review follows the structured output template with severity classifications"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Hey, I wrote this utility and I think it's pretty solid. Any thoughts?\n\nclass LRUCache<K, V> {\n  private capacity: number;\n  private cache: Map<K, V>;\n\n  constructor(capacity: number) {\n    this.capacity = capacity;\n    this.cache = new Map();\n  }\n\n  get(key: K): V | undefined {\n    if (!this.cache.has(key)) return undefined;\n    const value = this.cache.get(key)!;\n    this.cache.delete(key);\n    this.cache.set(key, value);\n    return value;\n  }\n\n  put(key: K, value: V): void {\n    if (this.cache.has(key)) {\n      this.cache.delete(key);\n    }\n    if (this.cache.size >= this.capacity) {\n      const oldest = this.cache.keys().next().value;\n      this.cache.delete(oldest);\n    }\n    this.cache.set(key, value);\n  }\n}",
+      "expected_output": "This is well-written code with minor suggestions. Review should be mostly positive with Good Practices, minimal or no critical issues, and perhaps a few suggestions for edge cases",
+      "expectations": [
+        "Review recognizes this as generally well-written code and states so in the Summary",
+        "Review has zero or very few Critical Issues (the code is fundamentally correct)",
+        "Review identifies multiple Good Practices (e.g., generic types, leveraging Map insertion order for LRU, clean API)",
+        "Review may suggest edge case handling (e.g., capacity <= 0) or adding a size/clear method as Suggestions",
+        "Review follows the structured output format even for mostly-positive reviews",
+        "Review does not manufacture false critical issues just to fill sections"
       ]
     }
   ]
