@@ -1,0 +1,45 @@
+{
+  "skill_name": "code-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this Python function:\n\ndef get_user(user_id):\n    query = f\"SELECT * FROM users WHERE id = {user_id}\"\n    result = db.execute(query).fetchone()\n    return {\"name\": result[0], \"email\": result[1]}",
+      "expected_output": "Should identify SQL injection as critical, unhandled None result, and suggest parameterized queries with code fix",
+      "expectations": [
+        "Review identifies SQL injection vulnerability and classifies it as 🔴 Critical",
+        "Review suggests parameterized query as the fix with a code example",
+        "Review identifies the risk of NoneType error when no user is found",
+        "Review mentions that SELECT * is suboptimal and suggests specifying columns",
+        "Review follows the output template with Summary, Critical Issues, Suggestions, and Metrics sections",
+        "Review provides specific line references for each issue"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this React component:\n\nimport React, { useState, useEffect } from 'react';\n\nfunction UserList({ users, onSelect }) {\n  const [filtered, setFiltered] = useState(users);\n  const [search, setSearch] = useState('');\n\n  useEffect(() => {\n    setFiltered(users.filter(u => u.name.toLowerCase().includes(search)));\n  }, []);\n\n  const handleSearch = (e) => {\n    setSearch(e.target.value);\n  };\n\n  return (\n    <div>\n      <input onChange={handleSearch} value={search} />\n      {filtered.map(u => (\n        <div onClick={() => onSelect(u)}>{u.name} - {u.email}</div>\n      ))}\n    </div>\n  );\n}\n\nexport default UserList;",
+      "expected_output": "Should identify stale useEffect dependencies, missing key prop, search not working reactively, and accessibility issues",
+      "expectations": [
+        "Review identifies the stale/incomplete useEffect dependency array as a critical or major issue",
+        "Review explains that changing the search input won't actually re-filter because useEffect deps are empty",
+        "Review identifies the missing key prop in the .map() JSX",
+        "Review suggests adding search and users to the useEffect dependency array",
+        "Review provides corrected code examples",
+        "Review uses the structured output format with severity classifications"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Can you check if this Go HTTP handler has any issues?\n\nfunc handleUpload(w http.ResponseWriter, r *http.Request) {\n    file, header, err := r.FormFile(\"document\")\n    if err != nil {\n        http.Error(w, err.Error(), 500)\n        return\n    }\n\n    filename := header.Filename\n    dst, err := os.Create(\"/uploads/\" + filename)\n    if err != nil {\n        http.Error(w, \"Failed to save\", 500)\n        return\n    }\n\n    io.Copy(dst, file)\n\n    fmt.Fprintf(w, \"Uploaded: %s\", filename)\n}",
+      "expected_output": "Should identify path traversal, missing file close/defer, missing request body limits, error exposure, and missing Content-Type validation",
+      "expectations": [
+        "Review identifies path traversal vulnerability in the filename (attacker can use ../)",
+        "Review identifies that file and dst are never closed (missing defer .Close())",
+        "Review identifies that io.Copy error is not checked",
+        "Review mentions the need for request body size limits to prevent DoS",
+        "Review identifies that err.Error() on line 4 exposes internal error details to users",
+        "Review classifies the path traversal as 🔴 Critical",
+        "Review provides concrete Go code fixes"
+      ]
+    }
+  ]
+}
