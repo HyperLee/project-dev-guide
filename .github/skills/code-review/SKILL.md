@@ -1,6 +1,6 @@
-﻿---
+---
 name: code-review
-description: "Perform a thorough, senior-engineer-level code review with actionable feedback. Use whenever the user asks for code review, PR review, diff inspection, code audit, quality assessment, security review, or asks for feedback on pasted code — even without explicitly saying 'code review'. Also triggers when the user pastes code and asks for opinions, improvement suggestions, refactoring suggestions, or whether it's ready to merge or production ready. Triggers on informal requests like 'check my code', 'look over this', 'find bugs in this', 'is this implementation okay', or any time the user shares code and seems to want feedback of any kind. Also triggers on pull request links, GitHub PR URLs, or when the user mentions merging, shipping, or deploying code. Useful for reviewing configuration changes, Dockerfiles, CI/CD pipelines, or infrastructure as code."
+description: "Perform a thorough, senior-engineer-level code review with actionable feedback. Use whenever the user asks for code review, PR review, diff inspection, code audit, quality assessment, security review, or asks for feedback on pasted code — even without explicitly saying 'code review'. Also triggers when the user pastes code and asks for opinions, improvement suggestions, or whether it's ready to merge or production ready. Triggers on informal requests like 'check my code', 'look over this', 'find bugs in this', 'is this implementation okay', or any time the user shares code and seems to want feedback of any kind. Also triggers on pull request links, GitHub PR URLs, or when the user mentions merging, shipping, or deploying code. Useful for reviewing configuration changes, Dockerfiles, CI/CD pipelines, or infrastructure as code. This skill analyzes and reviews existing code — use other tools for rewriting, refactoring, or bug fixing."
 ---
 
 # Code Review
@@ -84,7 +84,7 @@ Examine the code systematically across these areas. Prioritize based on the code
 When performing analysis, consult these references for comprehensive coverage:
 
 - **`references/security-checklist.md`** — Read when reviewing code that handles user input, authentication, data storage, or external communication. Provides a systematic checklist to avoid missing critical security issues.
-- **`references/language-patterns.md`** — Read when reviewing code in JavaScript/TypeScript, Python, Go, Java, C#, or Rust. Contains common anti-patterns and idiomatic fixes for each language.
+- **`references/language-patterns.md`** — Read when reviewing code in JavaScript/TypeScript, Python, Go, Java, C#, Rust, PHP, or Kotlin. Contains common anti-patterns and idiomatic fixes for each language.
 - **`references/performance-patterns.md`** — Read when performance is a concern or the focus area. Covers algorithm, database, memory, async, and frontend performance patterns.
 - **`references/testing-patterns.md`** — Read when reviewing test code or when test quality is a focus. Covers common test anti-patterns (assertion-free tests, excessive mocking, flaky tests) and language-specific test conventions.
 

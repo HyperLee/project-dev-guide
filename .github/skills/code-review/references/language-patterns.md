@@ -115,3 +115,40 @@ When reviewing code, use this reference for language-specific pitfalls and idiom
 
 ### Project-Specific Conventions
 When reviewing C# code, always check the project's `.editorconfig`, `Directory.Build.props`, and analyzer settings for project-specific formatting and style rules. Align your feedback with whatever conventions the project has established rather than imposing defaults. Common configurable conventions include indentation style, brace placement, `using` statement style, expression-bodied member preferences, and import ordering.
+
+## PHP
+
+### Common Anti-Patterns
+- **SQL injection via string interpolation**: `$db->query("SELECT * FROM users WHERE id = $id")` — always use prepared statements with `$stmt->execute([$id])`.
+- **`extract()` on user input**: `extract($_POST)` creates variables from user-controlled keys, enabling variable overwrite attacks and mass assignment. Never use it on untrusted data.
+- **Using `md5()` or `sha1()` for passwords**: Use `password_hash()` / `password_verify()` with `PASSWORD_BCRYPT` or `PASSWORD_ARGON2ID`.
+- **Loose comparison pitfalls**: `"0" == false` is `true`, `"0e123" == "0e456"` is `true` (magic hash). Use `===` for strict comparison.
+- **Suppressing errors with `@`**: `@file_get_contents(...)` hides failures silently. Check return values explicitly and handle errors.
+- **Not escaping output**: Rendering user input without `htmlspecialchars($var, ENT_QUOTES, 'UTF-8')` leads to XSS.
+- **Using `$_GET`/`$_POST` directly deep in business logic**: Accessing superglobals outside the controller layer couples business logic to HTTP. Pass validated values as function parameters.
+
+### Idiomatic Patterns
+- Use type declarations for parameters and return types (PHP 7.4+)
+- Use `match` expression instead of `switch` when returning values (PHP 8.0+)
+- Use constructor property promotion for simple DTOs (PHP 8.0+)
+- Use enums instead of class constants for enumerated values (PHP 8.1+)
+- Use `readonly` properties for immutable data (PHP 8.1+)
+- Use named arguments for functions with many optional parameters
+
+## Kotlin
+
+### Common Anti-Patterns
+- **Platform type `!` ignored**: Java interop returns platform types (`String!`) which bypass null safety. Explicitly annotate nullability when calling Java code.
+- **Using `!!` (non-null assertion) liberally**: Throws `NullPointerException` on null — defeats Kotlin's null safety. Use `?.`, `?:`, or `let` blocks instead.
+- **Blocking the main thread on Android**: Network/DB calls on the main thread cause ANR. Use `withContext(Dispatchers.IO)` or appropriate coroutine dispatchers.
+- **Leaking coroutine scopes**: Launching coroutines in `GlobalScope` or without structured concurrency causes leaks. Use `viewModelScope`, `lifecycleScope`, or a custom `CoroutineScope` with proper cancellation.
+- **Mutable collections exposed from classes**: Returning `MutableList` from a public API allows callers to modify internal state. Return `List` (read-only view) or defensive copies.
+- **`lateinit` for nullable state**: `lateinit var` throws `UninitializedPropertyAccessException` if accessed before assignment. Use nullable types with `?.` for truly optional state.
+
+### Idiomatic Patterns
+- Use `data class` for DTOs and value objects — provides `equals()`, `hashCode()`, `copy()`
+- Use sealed classes/interfaces for exhaustive type hierarchies
+- Use scope functions (`let`, `run`, `apply`, `also`, `with`) appropriately — `let` for null checks, `apply` for object configuration
+- Use `require()` / `check()` for preconditions and state validation
+- Use string templates `"Hello, $name"` instead of concatenation
+- Prefer `when` expression over `if/else` chains for multiple conditions

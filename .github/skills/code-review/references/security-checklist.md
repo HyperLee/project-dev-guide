@@ -12,6 +12,7 @@ Use this checklist when the code under review handles user input, authentication
 - [ ] Input used in regex is escaped or validated to prevent ReDoS (catastrophic backtracking)
 - [ ] Deserialization of user-controlled data uses safe formats (JSON) not dangerous ones (pickle, eval, YAML `!!python`)
 - [ ] Server-side requests do not use user-controlled URLs without allowlist validation (SSRF prevention)
+- [ ] User input is never passed directly into server-side template engines (Jinja2, Twig, Freemarker) — use sandboxed rendering or escape template syntax to prevent SSTI
 
 ## Authentication & Authorization
 
@@ -23,6 +24,8 @@ Use this checklist when the code under review handles user input, authentication
 - [ ] Failed login attempts are rate-limited to prevent brute force
 - [ ] Sensitive operations require re-authentication or step-up auth
 - [ ] JWT tokens are validated (signature, expiration, issuer, audience) — not just decoded
+- [ ] CSRF protection is in place for state-changing requests when using cookie-based authentication (SameSite attribute, CSRF tokens, or origin/referer validation)
+- [ ] OAuth 2.0 / OIDC flows validate the `state` parameter to prevent CSRF and use PKCE for public clients to prevent authorization code interception
 
 ## Data Protection
 
@@ -33,6 +36,7 @@ Use this checklist when the code under review handles user input, authentication
 - [ ] Error messages don't expose internal implementation details to end users
 - [ ] CORS configuration is restrictive (not `*` for authenticated endpoints)
 - [ ] HTTP security headers are set (CSP, HSTS, X-Frame-Options, etc.)
+- [ ] Content Security Policy (CSP) is configured to restrict script sources — avoids `unsafe-inline` and `unsafe-eval` where possible, uses nonces or hashes for inline scripts
 
 ## Cryptography
 

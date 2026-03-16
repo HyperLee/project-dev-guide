@@ -59,7 +59,7 @@
         "Review mentions missing @Valid or input validation on the @RequestBody",
         "Review classifies at least one issue as 🔴 Critical",
         "Review provides concrete Java code fixes",
-        "Review follows the structured output template"
+        "Review follows the structured output template with Summary, Critical Issues, Suggestions, Good Practices, and Metrics sections"
       ]
     },
     {
@@ -97,8 +97,8 @@
       "expected_output": "This is well-written code with minor suggestions. Review should be mostly positive with Good Practices, minimal or no critical issues, and perhaps a few suggestions for edge cases",
       "expectations": [
         "Review recognizes this as generally well-written code and states so in the Summary",
-        "Review has zero or very few Critical Issues (the code is fundamentally correct)",
-        "Review identifies multiple Good Practices (e.g., generic types, leveraging Map insertion order for LRU, clean API)",
+        "Review has zero Critical Issues — the code is fundamentally correct and the review does not manufacture false problems",
+        "Review identifies at least 2 Good Practices that each reference a specific code construct (e.g., generic types, Map insertion order for LRU, clean API design)",
         "Review may suggest edge case handling (e.g., capacity <= 0) or adding a size/clear method as Suggestions",
         "Review follows the structured output format even for mostly-positive reviews",
         "Review does not manufacture false critical issues just to fill sections"
@@ -178,7 +178,7 @@
         "Review identifies the command injection in the export endpoint via shell=True with user input as 🔴 Critical",
         "Review identifies the open redirect vulnerability in the redirect endpoint",
         "Review provides concrete fixes for each vulnerability (parameterized queries, HTML escaping, subprocess with list args, URL allowlist)",
-        "Review dedicates significant depth to security analysis given the focus area parameter",
+        "Review mentions at least 4 distinct security vulnerabilities in its analysis given the security focus area parameter",
         "Review consults or applies knowledge from the security checklist reference",
         "Review follows the structured output template with severity classifications"
       ]
@@ -196,7 +196,7 @@
         "Review identifies that none of the controller methods have error handling (try/catch)",
         "Review organizes findings by severity rather than by file, as recommended for multi-file reviews",
         "Review provides concrete code fixes",
-        "Review follows the structured output template"
+        "Review follows the structured output template with Summary, Critical Issues, Suggestions, Good Practices, and Metrics sections including a verdict"
       ]
     },
     {
@@ -226,7 +226,7 @@
         "Review identifies the correctness bug in rank calculation where it reuses the current user's orders instead of fetching each user's orders",
         "Review identifies JSON.parse(JSON.stringify(orders)) as an unnecessary deep clone with performance cost",
         "Review suggests using batch queries or JOINs instead of per-user queries",
-        "Review dedicates significant depth to performance analysis given the focus area parameter",
+        "Review mentions at least 3 distinct performance issues (e.g., N+1 queries, O(n^2) complexity, unnecessary deep clone) given the performance focus area parameter",
         "Review provides concrete code fixes showing batch query pattern or Promise.all approach",
         "Review follows the structured output template with severity classifications"
       ]
@@ -243,7 +243,7 @@
         "Review identifies overuse of It.IsAny<> which accepts any arguments, potentially hiding bugs where wrong values are passed",
         "Review notes the TODO comment indicating incomplete test coverage",
         "Review identifies missing test cases: payment with zero/negative amount, duplicate payment, concurrent payment for same order",
-        "Review dedicates significant depth to testing patterns given the focus area parameter",
+        "Review mentions at least 3 distinct testing anti-patterns or improvement areas given the testing focus area parameter",
         "Review follows the structured output template with severity classifications"
       ]
     },
@@ -277,6 +277,39 @@
         "Review identifies that PipelineConfig has maxRetries and timeoutMs fields but neither is implemented in OrderPipeline.execute()",
         "Review identifies that UpdateOrderStep lacks a rollback method — if a later step fails, the order status remains 'confirmed'",
         "Review explicitly notes which sections were reviewed in depth vs. scanned, as SKILL.md recommends for large PRs"
+      ]
+    },
+    {
+      "id": 19,
+      "files": [],
+      "prompt": "Review this GitHub Actions workflow and Terraform config for our production deployment pipeline:\n\n```yaml\n# .github/workflows/deploy.yml\nname: Deploy to Production\non:\n  push:\n    branches: [main]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n\n      - name: Setup Terraform\n        uses: hashicorp/setup-terraform@v2\n\n      - name: Terraform Init\n        run: terraform init\n        env:\n          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY }}\n          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET }}\n\n      - name: Terraform Apply\n        run: terraform apply -auto-approve\n        env:\n          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY }}\n          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET }}\n          TF_VAR_db_password: admin123\n\n      - name: Run migrations\n        run: |\n          ssh -o StrictHostKeyChecking=no ec2-user@${{ steps.terraform.outputs.server_ip }} \\\n            \"cd /app && ./migrate.sh\"\n\n      - name: Notify\n        if: always()\n        run: curl -X POST ${{ secrets.SLACK_WEBHOOK }} -d '{\"text\": \"Deploy finished\"}'\n```\n\n```hcl\n# main.tf\nresource \"aws_security_group\" \"web\" {\n  name = \"web-sg\"\n\n  ingress {\n    from_port   = 0\n    to_port     = 65535\n    protocol    = \"tcp\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n\n  egress {\n    from_port   = 0\n    to_port     = 0\n    protocol    = \"-1\"\n    cidr_blocks = [\"0.0.0.0/0\"]\n  }\n}\n\nresource \"aws_instance\" \"web\" {\n  ami           = \"ami-12345678\"\n  instance_type = \"t2.micro\"\n  key_name      = \"my-key\"\n  security_groups = [aws_security_group.web.name]\n\n  user_data = <<-EOF\n    #!/bin/bash\n    curl https://raw.githubusercontent.com/company/scripts/main/setup.sh | bash\n  EOF\n}\n\nresource \"aws_db_instance\" \"main\" {\n  engine         = \"mysql\"\n  instance_class = \"db.t3.micro\"\n  username       = \"admin\"\n  password       = \"admin123\"\n  publicly_accessible = true\n  skip_final_snapshot = true\n}\n```",
+      "expected_output": "Should identify security group opening all ports, hardcoded DB password in both TF and workflow, publicly accessible RDS, piping remote script to bash, no terraform plan step, disabled SSH host key checking, auto-approve without plan, pinned action versions missing",
+      "expectations": [
+        "Review identifies the security group allowing all TCP ports (0-65535) from all IPs (0.0.0.0/0) as a 🔴 Critical security issue",
+        "Review identifies the hardcoded database password 'admin123' in both the Terraform config and the GitHub Actions env var",
+        "Review identifies that the RDS instance is publicly accessible, which exposes the database to the internet",
+        "Review identifies the `curl | bash` pattern in user_data as a supply chain security risk",
+        "Review identifies that `terraform apply -auto-approve` runs without a preceding `terraform plan` review step",
+        "Review identifies `-o StrictHostKeyChecking=no` in the SSH command as disabling host key verification",
+        "Review identifies that GitHub Actions versions are not pinned to SHA hashes (e.g., actions/checkout@v3 should use a commit SHA)",
+        "Review provides concrete fixes for the infrastructure security issues",
+        "Review follows the structured output template with severity classifications"
+      ]
+    },
+    {
+      "id": 20,
+      "files": [],
+      "prompt": "Review this Java concurrent order processing service:\n\n```java\nimport java.util.*;\nimport java.util.concurrent.*;\n\npublic class OrderProcessingService {\n    private final Map<String, Order> activeOrders = new HashMap<>();\n    private final ExecutorService executor = Executors.newFixedThreadPool(10);\n    private double totalRevenue = 0;\n\n    public void submitOrder(Order order) {\n        activeOrders.put(order.getId(), order);\n        executor.submit(() -> processOrder(order));\n    }\n\n    private void processOrder(Order order) {\n        try {\n            Thread.sleep(100); // simulate processing\n            order.setStatus(\"PROCESSING\");\n\n            double amount = order.getAmount();\n            totalRevenue += amount;\n\n            if (totalRevenue > 1_000_000) {\n                pauseProcessing();\n            }\n\n            order.setStatus(\"COMPLETED\");\n            activeOrders.remove(order.getId());\n        } catch (InterruptedException e) {\n            order.setStatus(\"FAILED\");\n        }\n    }\n\n    public List<Order> getActiveOrders() {\n        return new ArrayList<>(activeOrders.values());\n    }\n\n    public double getTotalRevenue() {\n        return totalRevenue;\n    }\n\n    private void pauseProcessing() {\n        executor.shutdown();\n    }\n\n    public void shutdown() {\n        executor.shutdown();\n    }\n}\n```",
+      "expected_output": "Should identify HashMap used without synchronization from multiple threads, non-atomic double increment (totalRevenue += amount), executor.shutdown() in pauseProcessing kills the thread pool for all future orders, no volatile/atomic on shared state, InterruptedException not re-setting interrupt flag",
+      "expectations": [
+        "Review identifies that HashMap is not thread-safe and is accessed from multiple threads (submitOrder and processOrder) causing potential data corruption — should use ConcurrentHashMap",
+        "Review identifies the non-atomic `totalRevenue += amount` as a race condition — concurrent threads can read stale values and lose updates — should use AtomicDouble or synchronized access",
+        "Review identifies that `pauseProcessing()` calls `executor.shutdown()` which permanently stops the thread pool, preventing all future order processing",
+        "Review identifies that the InterruptedException handler does not restore the interrupt flag via `Thread.currentThread().interrupt()`",
+        "Review identifies that `order.setStatus()` is called from the executor thread without synchronization while the order may be read from the main thread via `getActiveOrders()`",
+        "Review suggests using `ConcurrentHashMap`, `AtomicReference` or `LongAdder`, and proper synchronization primitives as fixes",
+        "Review provides concrete Java code fixes for at least 2 of the concurrency issues",
+        "Review follows the structured output template with severity classifications"
       ]
     }
   ]
