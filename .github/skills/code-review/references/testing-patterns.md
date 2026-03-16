@@ -96,12 +96,18 @@ Tests should not depend on each other's execution order or shared state. Each te
 
 Choose the right test double for the situation:
 
-- **Fake**: A working implementation with shortcuts (e.g., in-memory database). Best for integration tests where you need realistic behavior without external dependencies.
+- **Fake**: A working implementation with shortcuts (e.g., in-memory database, local file store). Best for integration tests where you need realistic behavior without external dependencies.
 - **Stub**: Returns canned responses. Use when you just need a dependency to return specific data for a test scenario.
 - **Mock**: Verifies interactions (was this method called with these arguments?). Use sparingly — only when the interaction itself is the behavior under test (e.g., verifying an email was sent).
 - **Spy**: Wraps a real object and records calls. Use when you need real behavior but also want to verify interactions.
 
 **Rule of thumb**: Prefer fakes over mocks for most tests. Mocks test *how* code works; fakes test *what* code does. Fakes lead to less brittle tests.
+
+**Common misuses to flag in reviews:**
+- Mocking the class under test — only mock its dependencies, never the thing being tested
+- Mocking value objects or data structures (DTOs, configs) — just construct the real object
+- Mock returning a mock (`when(mock.getX()).thenReturn(anotherMock)`) — indicates test is coupled to implementation chain
+- Not verifying mock interactions — setting up a mock but never asserting it was called correctly voids its purpose
 
 ## Integration & E2E Test Anti-Patterns
 
@@ -114,3 +120,18 @@ Choose the right test double for the situation:
 **Pattern**: Integration tests that create records in a shared database but never clean them up.
 **Why it's bad**: Tests pollute each other's state, causing ordering-dependent failures.
 **Fix**: Use per-test transactions that roll back, or dedicated test databases that are reset between runs.
+
+### Environment-Specific Assumptions
+**Pattern**: Tests hardcode paths, ports, hostnames, or OS-specific behavior (e.g., `/tmp/`, `localhost:5432`, Windows vs. Unix line endings).
+**Why it's bad**: Tests pass on one developer's machine and fail in CI or on a different OS.
+**Fix**: Use environment variables or test config for environment-specific values. Use cross-platform path APIs.
+
+### Testing Too Many Layers at Once
+**Pattern**: E2E tests that verify business logic, UI rendering, and API behavior all in one test — when failures could be caught at a lower level.
+**Why it's bad**: Slow, brittle, and hard to diagnose which layer failed. Minor UI changes break tests that are really about business logic.
+**Fix**: Follow the testing pyramid — most tests should be unit tests, fewer integration tests, fewest E2E tests. Only use E2E for critical user flows.
+
+### Timeout-Based Synchronization
+**Pattern**: Using `sleep(2000)` or fixed waits to synchronize with async operations in E2E or integration tests.
+**Why it's bad**: Too short → flaky failures; too long → slow test suite. Both vary by machine load.
+**Fix**: Use polling/retry with a condition (e.g., wait until element appears, wait until queue is empty) with a maximum timeout.

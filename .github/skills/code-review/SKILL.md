@@ -20,7 +20,11 @@ Before writing any feedback, gather the context you need to review effectively:
 - **Understand the intent** — what is this code trying to accomplish? Read commit messages, PR descriptions, or surrounding code if available.
 - **Check related files** — use Grep and Glob to find callers, tests, type definitions, or configuration files that interact with the code under review. Understanding how the code fits into the larger system is critical for catching integration issues.
 - **Check for team conventions** — look for `.editorconfig`, `CONTRIBUTING.md`, style guides, linter configs (`.eslintrc`, `.prettierrc`, `stylecop.json`), or instructions files in the project. When they exist, align your feedback with the team's established conventions rather than imposing generic preferences. Don't flag style issues that the team has explicitly chosen differently.
-- **For PR/diff reviews**: read the full diff context, not just the changed lines. Understand what existed before and what changed. Use `git diff` or `git log` when relevant. Also consider: are the commits logically organized? Do commit messages explain the "why"? Is the PR scope focused or does it mix unrelated changes?
+- **For PR/diff reviews**: read the full diff context, not just the changed lines. Understand what existed before and what changed. Use `git diff` or `git log` when relevant. Additionally check:
+  - **Commit organization** — are commits logically separated (one concern per commit) or is everything squashed into a single "fix stuff" commit?
+  - **Commit messages** — do they explain the "why" behind the change, not just the "what"? Vague messages like "update" or "fix" make future debugging harder.
+  - **PR scope** — is this PR focused on one thing, or does it mix unrelated changes (e.g., a feature + a refactor + a dependency bump)? Suggest splitting if it's doing too much.
+  - **Leftover artifacts** — check for debug logging, commented-out code, TODO comments, or unintended file changes (e.g., lock file churn, IDE config changes).
 
 **Risk-based depth allocation**: Before diving into analysis, quickly assess the risk profile of the code. Code that handles authentication, payments, user data, cryptography, or system commands warrants deeper security and correctness scrutiny — even if it's only 20 lines. Conversely, a 400-line UI layout change may only need a surface-level scan. Spend your analysis time proportionally to the risk, not just the line count.
 
@@ -66,12 +70,14 @@ Examine the code systematically across these areas. Prioritize based on the code
 - Do tests actually assert meaningful behavior, not just that code runs?
 - Test readability — can someone understand expected behavior from the tests alone?
 
-#### Accessibility (frontend code)
-- Semantic HTML elements used where appropriate (`button` not `div onClick`)
-- Interactive elements are keyboard-accessible (focus management, tab order)
-- Images and icons have meaningful alt text or aria-labels
-- Form inputs have associated labels
-- Color is not the sole means of conveying information
+#### Accessibility (when reviewing frontend / UI code)
+- Semantic HTML elements used where appropriate (`<button>` not `<div onClick>`, `<nav>`, `<main>`, `<section>`)
+- Interactive elements are keyboard-accessible — focusable, respond to Enter/Space, have visible focus indicators
+- Images and icons have meaningful `alt` text or `aria-label`; decorative images use `alt=""`
+- Form inputs have associated `<label>` elements (via `htmlFor` / `for`, or wrapping)
+- Color is not the sole means of conveying information (error states, status indicators)
+- ARIA attributes used correctly when native HTML semantics are insufficient — avoid redundant ARIA (e.g., `role="button"` on a `<button>`)
+- Dynamic content updates are announced to screen readers (live regions, focus management after navigation)
 
 #### Reference Files
 
@@ -113,8 +119,13 @@ Structure every review using this format — consistency makes reviews easier to
 - Critical issues: N
 - Suggestions: N
 - Good practices identified: N
-- Verdict: [Ready to merge / Needs changes / Needs significant rework]
+- Verdict: [Ready to merge / Needs minor changes / Needs significant rework]
 ```
+
+**Verdict criteria:**
+- **Ready to merge** — zero critical issues, suggestions are optional improvements only
+- **Needs minor changes** — no critical issues but has suggestions that should be addressed, or has 1 low-severity critical issue with a straightforward fix
+- **Needs significant rework** — has critical issues that affect security, correctness, or data integrity, or has fundamental design problems that require restructuring
 
 **When there are no issues**: If the code is well-written and you find no critical issues or suggestions, still produce a full review. Write the Summary with your positive assessment, skip the Critical Issues and Suggestions sections (or write "None found"), and focus on the Good Practices section — there's always something worth reinforcing.
 
