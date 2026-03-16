@@ -77,3 +77,40 @@ Tests should not depend on each other's execution order or shared state. Each te
 - Use `testify/assert` or standard `if` checks — be consistent within the project
 - Use `t.Helper()` in test helper functions for better error reporting
 - Use `t.Parallel()` where tests are independent
+
+### Java (JUnit 5)
+- Use `@ParameterizedTest` with `@ValueSource`, `@CsvSource`, or `@MethodSource` for data-driven tests
+- Use `assertThrows` for exception testing instead of try-catch with `fail()`
+- Use `@BeforeEach` / `@AfterEach` for per-test setup/teardown, `@BeforeAll` / `@AfterAll` for expensive shared resources
+- Use `@Nested` classes to group related tests and share setup
+- Use `@DisplayName` for readable test names when method names aren't sufficient
+- Prefer AssertJ fluent assertions for complex assertions (e.g., `assertThat(list).hasSize(3).contains("a")`)
+
+### Rust
+- Use `#[cfg(test)] mod tests` for unit tests in the same file
+- Use `#[should_panic(expected = "...")]` for expected panic tests
+- Use `assert_eq!`, `assert_ne!`, and `assert!(condition, "message")` with descriptive messages
+- Use `Result<(), Box<dyn Error>>` return type in tests for `?` operator support
+
+## Test Double Strategy
+
+Choose the right test double for the situation:
+
+- **Fake**: A working implementation with shortcuts (e.g., in-memory database). Best for integration tests where you need realistic behavior without external dependencies.
+- **Stub**: Returns canned responses. Use when you just need a dependency to return specific data for a test scenario.
+- **Mock**: Verifies interactions (was this method called with these arguments?). Use sparingly — only when the interaction itself is the behavior under test (e.g., verifying an email was sent).
+- **Spy**: Wraps a real object and records calls. Use when you need real behavior but also want to verify interactions.
+
+**Rule of thumb**: Prefer fakes over mocks for most tests. Mocks test *how* code works; fakes test *what* code does. Fakes lead to less brittle tests.
+
+## Integration & E2E Test Anti-Patterns
+
+### Relying on External Services in CI
+**Pattern**: Tests that hit real third-party APIs (payment providers, email services) in CI pipelines.
+**Why it's bad**: Flaky failures from network issues, rate limits, or service downtime. Also risks real side effects (charges, emails sent).
+**Fix**: Use fakes or recorded responses (VCR pattern / WireMock / nock) for CI. Reserve real-service tests for a separate, low-frequency integration suite.
+
+### No Test Data Cleanup
+**Pattern**: Integration tests that create records in a shared database but never clean them up.
+**Why it's bad**: Tests pollute each other's state, causing ordering-dependent failures.
+**Fix**: Use per-test transactions that roll back, or dedicated test databases that are reset between runs.

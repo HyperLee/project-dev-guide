@@ -1,0 +1,22 @@
+[
+  {"query": "Review this Python function for any issues", "should_trigger": true},
+  {"query": "Can you do a code review on my PR?", "should_trigger": true},
+  {"query": "Check my code and tell me if it's production ready", "should_trigger": true},
+  {"query": "Look over this and let me know what you think:\n\ndef add(a, b):\n    return a + b", "should_trigger": true},
+  {"query": "Any security issues in this endpoint?", "should_trigger": true},
+  {"query": "Is this implementation okay? I'm not sure about the error handling.\n\ntry:\n    result = do_something()\nexcept:\n    pass", "should_trigger": true},
+  {"query": "Find bugs in this JavaScript code:\n\nconst items = [1, 2, 3];\nfor (var i in items) { console.log(items[i]); }", "should_trigger": true},
+  {"query": "Could you audit this code for quality before I merge it?", "should_trigger": true},
+  {"query": "What do you think about this diff?\n\n```diff\n- const x = 1;\n+ const x = 2;\n```", "should_trigger": true},
+  {"query": "I want feedback on whether this React component follows best practices", "should_trigger": true},
+  {"query": "Write a sorting function in Python", "should_trigger": false},
+  {"query": "Explain how async/await works in JavaScript", "should_trigger": false},
+  {"query": "Help me debug this error: TypeError: Cannot read properties of undefined", "should_trigger": false},
+  {"query": "What is the difference between interface and type in TypeScript?", "should_trigger": false},
+  {"query": "Generate a REST API for a todo app using Express", "should_trigger": false},
+  {"query": "How do I install numpy?", "should_trigger": false},
+  {"query": "Refactor this function to use async/await instead of callbacks", "should_trigger": false},
+  {"query": "Create unit tests for the UserService class", "should_trigger": false},
+  {"query": "What does this regex do? /^[a-z0-9]+$/i", "should_trigger": false},
+  {"query": "Translate this Python code to Go", "should_trigger": false}
+]

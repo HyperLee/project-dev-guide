@@ -3,6 +3,7 @@
   "evals": [
     {
       "id": 1,
+      "files": [],
       "prompt": "Review this Python API endpoint:\n\nimport os\nimport pickle\nfrom flask import Flask, request, jsonify\n\napp = Flask(__name__)\n\n@app.route('/api/process', methods=['POST'])\ndef process_data():\n    data = pickle.loads(request.data)\n    filename = request.args.get('output', 'result.txt')\n    filepath = os.path.join('/tmp/outputs', filename)\n    with open(filepath, 'w') as f:\n        f.write(str(data))\n    return jsonify({'status': 'ok', 'file': filepath})",
       "expected_output": "Should identify unsafe pickle deserialization as critical, path traversal via filename, missing input validation, and exposing internal file path in response",
       "expectations": [
@@ -17,6 +18,7 @@
     },
     {
       "id": 2,
+      "files": [],
       "prompt": "Review this React component:\n\nimport React, { useState, useEffect } from 'react';\n\nfunction UserList({ users, onSelect }) {\n  const [filtered, setFiltered] = useState(users);\n  const [search, setSearch] = useState('');\n\n  useEffect(() => {\n    setFiltered(users.filter(u => u.name.toLowerCase().includes(search)));\n  }, []);\n\n  const handleSearch = (e) => {\n    setSearch(e.target.value);\n  };\n\n  return (\n    <div>\n      <input onChange={handleSearch} value={search} />\n      {filtered.map(u => (\n        <div onClick={() => onSelect(u)}>{u.name} - {u.email}</div>\n      ))}\n    </div>\n  );\n}\n\nexport default UserList;",
       "expected_output": "Should identify stale useEffect dependencies, missing key prop, search not working reactively, and accessibility issues",
       "expectations": [
@@ -31,6 +33,7 @@
     },
     {
       "id": 3,
+      "files": [],
       "prompt": "Can you check if this Go HTTP handler has any issues?\n\nfunc handleUpload(w http.ResponseWriter, r *http.Request) {\n    file, header, err := r.FormFile(\"document\")\n    if err != nil {\n        http.Error(w, err.Error(), 500)\n        return\n    }\n\n    filename := header.Filename\n    dst, err := os.Create(\"/uploads/\" + filename)\n    if err != nil {\n        http.Error(w, \"Failed to save\", 500)\n        return\n    }\n\n    io.Copy(dst, file)\n\n    fmt.Fprintf(w, \"Uploaded: %s\", filename)\n}",
       "expected_output": "Should identify path traversal, missing file close/defer, missing request body limits, error exposure, and missing Content-Type validation",
       "expectations": [
@@ -46,6 +49,7 @@
     },
     {
       "id": 4,
+      "files": [],
       "prompt": "Review this Java Spring REST controller:\n\n@RestController\n@RequestMapping(\"/api/users\")\npublic class UserController {\n\n    @Autowired\n    private UserRepository userRepo;\n\n    @GetMapping(\"/{id}\")\n    public User getUser(@PathVariable Long id) {\n        return userRepo.findById(id).get();\n    }\n\n    @PostMapping\n    public User createUser(@RequestBody User user) {\n        user.setRole(\"ADMIN\");\n        return userRepo.save(user);\n    }\n\n    @DeleteMapping(\"/{id}\")\n    public void deleteUser(@PathVariable Long id) {\n        userRepo.deleteById(id);\n    }\n}",
       "expected_output": "Should identify .get() without isPresent check, hardcoded ADMIN role assignment, missing input validation, missing authorization, and no error handling",
       "expectations": [
@@ -60,6 +64,7 @@
     },
     {
       "id": 5,
+      "files": [],
       "prompt": "Look at this TypeScript function and tell me what you think:\n\nasync function fetchUserData(userId: string): Promise<any> {\n  const response = await fetch(`/api/users/${userId}`);\n  const data = await response.json();\n\n  const orders = await fetch(`/api/orders?user=${userId}`);\n  const orderData = await orders.json();\n\n  const reviews = await fetch(`/api/reviews?user=${userId}`);\n  const reviewData = await reviews.json();\n\n  return {\n    ...data,\n    orders: orderData,\n    reviews: reviewData,\n    fullName: data.firstName + ' ' + data.lastName,\n    orderTotal: orderData.reduce((sum: number, o: any) => sum + o.amount, 0)\n  };\n}",
       "expected_output": "Should identify sequential awaits that could be parallel, Promise<any> return type, missing error handling for fetch failures, missing response.ok checks",
       "expectations": [
@@ -73,6 +78,7 @@
     },
     {
       "id": 6,
+      "files": [],
       "prompt": "Review this PR diff for a configuration change:\n\n```diff\n--- a/docker-compose.yml\n+++ b/docker-compose.yml\n@@ -12,6 +12,14 @@ services:\n     environment:\n       - DATABASE_URL=postgresql://app:app123@db:5432/myapp\n       - REDIS_URL=redis://cache:6379\n+      - JWT_SECRET=super-secret-key-12345\n+      - AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\n+      - AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n+      - DEBUG=true\n+      - CORS_ORIGIN=*\n     ports:\n       - \"3000:3000\"\n+      - \"5432:5432\"\n+      - \"6379:6379\"\n```",
       "expected_output": "Should identify hardcoded secrets (JWT, AWS keys), exposed database and Redis ports, CORS wildcard, debug mode enabled, and existing DATABASE_URL credential issue",
       "expectations": [
@@ -86,6 +92,7 @@
     },
     {
       "id": 7,
+      "files": [],
       "prompt": "Hey, I wrote this utility and I think it's pretty solid. Any thoughts?\n\nclass LRUCache<K, V> {\n  private capacity: number;\n  private cache: Map<K, V>;\n\n  constructor(capacity: number) {\n    this.capacity = capacity;\n    this.cache = new Map();\n  }\n\n  get(key: K): V | undefined {\n    if (!this.cache.has(key)) return undefined;\n    const value = this.cache.get(key)!;\n    this.cache.delete(key);\n    this.cache.set(key, value);\n    return value;\n  }\n\n  put(key: K, value: V): void {\n    if (this.cache.has(key)) {\n      this.cache.delete(key);\n    }\n    if (this.cache.size >= this.capacity) {\n      const oldest = this.cache.keys().next().value;\n      this.cache.delete(oldest);\n    }\n    this.cache.set(key, value);\n  }\n}",
       "expected_output": "This is well-written code with minor suggestions. Review should be mostly positive with Good Practices, minimal or no critical issues, and perhaps a few suggestions for edge cases",
       "expectations": [
@@ -99,6 +106,7 @@
     },
     {
       "id": 8,
+      "files": [],
       "prompt": "Review this C# ASP.NET Core controller:\n\nusing Microsoft.AspNetCore.Mvc;\n\nnamespace MyApp.Controllers\n{\n    [ApiController]\n    [Route(\"api/[controller]\")]\n    public class OrdersController : ControllerBase\n    {\n        private static List<Order> _orders = new List<Order>();\n\n        [HttpPost]\n        public async Task<IActionResult> CreateOrder([FromBody] Order order)\n        {\n            order.Id = Guid.NewGuid().ToString();\n            order.CreatedAt = DateTime.Now;\n            _orders.Add(order);\n\n            var client = new HttpClient();\n            var response = await client.PostAsJsonAsync(\"https://payments.example.com/charge\", new { order.Amount });\n            if (response == null)\n                return BadRequest();\n\n            return Ok(order);\n        }\n\n        [HttpGet(\"{id}\")]\n        public IActionResult GetOrder(string id)\n        {\n            var order = _orders.FirstOrDefault(o => o.Id == id);\n            return Ok(order);\n        }\n    }\n}",
       "expected_output": "Should identify mutable static state (thread-unsafe shared list), HttpClient instantiation per request (socket exhaustion), DateTime.Now instead of UTC, block-scoped namespace, missing null check on GetOrder, response.ok not checked",
       "expectations": [
@@ -110,6 +118,85 @@
         "Review identifies that the payment response is not properly validated (response.IsSuccessStatusCode not checked)",
         "Review provides concrete C# code fixes",
         "Review follows the structured output template with severity classifications"
+      ]
+    },
+    {
+      "id": 9,
+      "files": [],
+      "prompt": "Review this Rust HTTP handler:\n\nuse std::fs;\nuse std::collections::HashMap;\n\nstatic mut CACHE: Option<HashMap<String, String>> = None;\n\npub fn handle_request(path: &str, body: &str) -> String {\n    let content = fs::read_to_string(path).unwrap();\n\n    unsafe {\n        if CACHE.is_none() {\n            CACHE = Some(HashMap::new());\n        }\n        CACHE.as_mut().unwrap().insert(path.to_string(), body.to_string());\n    }\n\n    let config: serde_json::Value = serde_json::from_str(body).unwrap();\n    let name = config[\"name\"].as_str().unwrap();\n\n    let output = format!(\"Hello, {}! File content: {}\", name, content);\n    output\n}",
+      "expected_output": "Should identify unsafe mutable static (data race), excessive unwrap calls, path traversal via user-controlled file path, and missing error handling",
+      "expectations": [
+        "Review identifies the mutable static CACHE with unsafe access as a 🔴 Critical data race issue in concurrent contexts",
+        "Review identifies that reading a user-controlled file path is a path traversal / information disclosure vulnerability",
+        "Review identifies excessive use of .unwrap() that will panic on any error instead of returning proper error responses",
+        "Review suggests using proper concurrency primitives (Mutex, RwLock, or once_cell/lazy_static) instead of unsafe mutable static",
+        "Review suggests using Result<T, E> and the ? operator for error propagation",
+        "Review provides concrete Rust code fixes",
+        "Review follows the structured output template with severity classifications"
+      ]
+    },
+    {
+      "id": 10,
+      "files": [],
+      "prompt": "Find bugs in this Node.js Express login endpoint:\n\nconst express = require('express');\nconst mysql = require('mysql');\nconst app = express();\n\nconst db = mysql.createConnection({ host: 'localhost', user: 'root', password: '', database: 'myapp' });\n\napp.post('/login', (req, res) => {\n  const { username, password } = req.body;\n  const query = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`;\n  db.query(query, (err, results) => {\n    if (err) {\n      res.status(500).json({ error: err.message });\n      return;\n    }\n    if (results.length > 0) {\n      req.session.user = results[0];\n      res.json({ message: 'Login successful', user: results[0] });\n    } else {\n      res.status(401).json({ error: 'Invalid credentials' });\n    }\n  });\n});",
+      "expected_output": "Should identify SQL injection as critical, plain-text password storage/comparison, exposing full user object in response, exposing DB error details, and missing rate limiting",
+      "expectations": [
+        "Review identifies the SQL injection vulnerability via string interpolation as a 🔴 Critical security issue",
+        "Review explains the specific attack vector (e.g., ' OR '1'='1 to bypass authentication)",
+        "Review identifies that passwords appear to be stored and compared in plain text instead of using bcrypt/argon2 hashing",
+        "Review notes that the full user object (including password) is returned in the login response",
+        "Review notes that internal database error messages are exposed to the client",
+        "Review suggests parameterized queries as the fix for SQL injection",
+        "Review provides concrete code fixes with examples",
+        "Review follows the structured output template with severity classifications"
+      ]
+    },
+    {
+      "id": 11,
+      "files": [],
+      "prompt": "Review these two Python test files for a calculator module:\n\n# test_calculator.py\nimport pytest\nfrom calculator import Calculator\n\nclass TestCalculator:\n    def test_add(self):\n        calc = Calculator()\n        calc.add(2, 3)\n\n    def test_subtract(self):\n        calc = Calculator()\n        result = calc.subtract(10, 4)\n        assert result == 6\n\n    def test_divide(self):\n        calc = Calculator()\n        assert calc.divide(10, 2) == 5\n\n    def test_multiply(self):\n        calc = Calculator()\n        result = calc.multiply(3, 4)\n        assert result == 12\n\n    def test_operations(self):\n        calc = Calculator()\n        assert calc.add(1, 1) == 2\n        assert calc.subtract(5, 3) == 2\n        assert calc.multiply(2, 3) == 6\n        assert calc.divide(10, 5) == 2\n        assert calc.add(-1, -1) == -2\n        assert calc.multiply(0, 100) == 0\n\n# test_advanced.py\nimport time\nfrom unittest import TestCase\nfrom calculator import Calculator\n\nshared_calc = Calculator()\n\nclass TestAdvanced(TestCase):\n    def test_performance(self):\n        start = time.time()\n        for i in range(1000):\n            shared_calc.add(i, i)\n        elapsed = time.time() - start\n        assert elapsed < 1.0\n\n    def test_chained(self):\n        result = shared_calc.add(shared_calc.multiply(2, 3), shared_calc.subtract(10, 5))\n        assert result == 11",
+      "expected_output": "Should identify assertion-free test, shared mutable state, god test with too many assertions, mixing unittest.TestCase with pytest, missing edge case tests, timing-dependent test",
+      "expectations": [
+        "Review identifies test_add as an assertion-free test that will pass even if add() returns wrong results",
+        "Review identifies test_operations as testing too many concepts in a single test (god test)",
+        "Review identifies shared_calc as shared mutable state between tests, causing potential test ordering dependencies",
+        "Review identifies the timing-dependent test_performance as a flaky test pattern",
+        "Review notes that unittest.TestCase is used in test_advanced.py when pytest is the project's test framework",
+        "Review identifies missing edge case tests (division by zero, negative numbers, large numbers, float inputs)",
+        "Review suggests using pytest fixtures instead of shared module-level state",
+        "Review follows the structured output template with severity classifications"
+      ]
+    },
+    {
+      "id": 12,
+      "files": [],
+      "prompt": "I want a security-focused review of this Python Flask endpoint. ${input:focus:security}\n\nfrom flask import Flask, request, redirect\nimport subprocess\nimport sqlite3\nimport os\n\napp = Flask(__name__)\n\n@app.route('/search')\ndef search():\n    q = request.args.get('q', '')\n    conn = sqlite3.connect('app.db')\n    results = conn.execute(f\"SELECT * FROM products WHERE name LIKE '%{q}%'\").fetchall()\n    conn.close()\n    return f\"<h1>Results for {q}</h1><ul>{''.join(f'<li>{r[1]}</li>' for r in results)}</ul>\"\n\n@app.route('/export')\ndef export():\n    fmt = request.args.get('format', 'csv')\n    output = subprocess.check_output(f'python export.py --format {fmt}', shell=True)\n    return output\n\n@app.route('/redirect')\ndef do_redirect():\n    url = request.args.get('url', '/')\n    return redirect(url)",
+      "expected_output": "Should identify SQL injection, XSS, command injection, open redirect, and missing input validation — with extra depth on security due to focus area parameter",
+      "expectations": [
+        "Review identifies the SQL injection in the search endpoint via f-string interpolation as 🔴 Critical",
+        "Review identifies the reflected XSS in the search endpoint where user input q is rendered directly in HTML without escaping",
+        "Review identifies the command injection in the export endpoint via shell=True with user input as 🔴 Critical",
+        "Review identifies the open redirect vulnerability in the redirect endpoint",
+        "Review provides concrete fixes for each vulnerability (parameterized queries, HTML escaping, subprocess with list args, URL allowlist)",
+        "Review dedicates significant depth to security analysis given the focus area parameter",
+        "Review consults or applies knowledge from the security checklist reference",
+        "Review follows the structured output template with severity classifications"
+      ]
+    },
+    {
+      "id": 13,
+      "files": [],
+      "prompt": "Review this PR diff that modifies the user service and its controller across two files:\n\n```diff\n--- a/src/services/userService.ts\n+++ b/src/services/userService.ts\n@@ -1,10 +1,25 @@\n import { db } from '../db';\n+import { redis } from '../cache';\n \n export class UserService {\n-  async getUser(id: string) {\n-    return db.users.findUnique({ where: { id } });\n+  async getUser(id: string) {\n+    const cached = await redis.get(`user:${id}`);\n+    if (cached) return JSON.parse(cached);\n+    const user = await db.users.findUnique({ where: { id } });\n+    await redis.set(`user:${id}`, JSON.stringify(user));\n+    return user;\n   }\n \n   async updateUser(id: string, data: Partial<User>) {\n     return db.users.update({ where: { id }, data });\n   }\n+\n+  async deleteUser(id: string) {\n+    await db.users.delete({ where: { id } });\n+  }\n+\n+  async listUsers(page: number) {\n+    return db.users.findMany({\n+      skip: page * 100,\n+      take: 100,\n+    });\n+  }\n }\n\n--- a/src/controllers/userController.ts\n+++ b/src/controllers/userController.ts\n@@ -8,6 +8,16 @@ export class UserController {\n     const user = await this.userService.getUser(req.params.id);\n     res.json(user);\n   }\n+\n+  async delete(req: Request, res: Response) {\n+    await this.userService.deleteUser(req.params.id);\n+    res.status(204).send();\n+  }\n+\n+  async list(req: Request, res: Response) {\n+    const users = await this.userService.listUsers(Number(req.query.page));\n+    res.json(users);\n+  }\n }\n```",
+      "expected_output": "Should identify cache invalidation missing on update/delete, stale cache serving null for non-existent users, missing auth on delete, NaN risk on page parameter, and no error handling",
+      "expectations": [
+        "Review identifies that updateUser and deleteUser do not invalidate the Redis cache, causing stale data to be served",
+        "Review identifies that when getUser finds no user (null), it caches null, meaning subsequent requests will get JSON.parse of 'null' instead of fetching fresh data",
+        "Review identifies the delete endpoint lacks authorization checks — any user can delete any other user",
+        "Review identifies that Number(req.query.page) can produce NaN when page parameter is missing or non-numeric",
+        "Review identifies that none of the controller methods have error handling (try/catch)",
+        "Review organizes findings by severity rather than by file, as recommended for multi-file reviews",
+        "Review provides concrete code fixes",
+        "Review follows the structured output template"
       ]
     }
   ]

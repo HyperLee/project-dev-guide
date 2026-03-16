@@ -11,11 +11,13 @@ Use this checklist when the code under review handles user input, authentication
 - [ ] Input used in file paths is validated against path traversal (`../`, null bytes, symlink attacks)
 - [ ] Input used in regex is escaped or validated to prevent ReDoS (catastrophic backtracking)
 - [ ] Deserialization of user-controlled data uses safe formats (JSON) not dangerous ones (pickle, eval, YAML `!!python`)
+- [ ] Server-side requests do not use user-controlled URLs without allowlist validation (SSRF prevention)
 
 ## Authentication & Authorization
 
 - [ ] Authentication checks exist on all endpoints that require them
 - [ ] Authorization checks verify the requesting user has permission for the specific resource, not just that they're logged in
+- [ ] Object-level authorization checks prevent accessing other users' resources via ID manipulation (IDOR prevention)
 - [ ] Session tokens are generated with cryptographically secure random generators
 - [ ] Passwords are hashed with a modern algorithm (bcrypt, scrypt, argon2) — not MD5, SHA1, or plain SHA256
 - [ ] Failed login attempts are rate-limited to prevent brute force

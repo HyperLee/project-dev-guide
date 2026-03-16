@@ -93,3 +93,17 @@ for item in list_a:
 ### Bundle Size
 **Pattern**: Importing entire libraries when only a small part is needed.
 **Fix**: Use tree-shakeable imports, dynamic imports for code splitting.
+
+## Caching Patterns
+
+### Missing Cache Invalidation
+**Pattern**: Data is cached but never invalidated when the underlying data changes (create, update, delete operations).
+**Fix**: Invalidate or update the cache entry whenever the source data is modified. Use consistent cache key patterns and consider write-through or write-behind strategies.
+
+### Caching Null / Error Results
+**Pattern**: Cache stores the result of a failed lookup or null response, causing subsequent requests to receive stale "not found" responses even after the data exists.
+**Fix**: Only cache successful, non-null results. Alternatively, cache null results with a very short TTL.
+
+### Cache Stampede (Thundering Herd)
+**Pattern**: A popular cache key expires and many concurrent requests simultaneously hit the database to regenerate it.
+**Fix**: Use lock/mutex on cache miss so only one request regenerates the cache. Alternatively, use background refresh before expiry or probabilistic early expiration.

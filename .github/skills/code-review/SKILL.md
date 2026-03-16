@@ -1,6 +1,6 @@
 ﻿---
 name: code-review
-description: "Perform a thorough, senior-engineer-level code review with actionable feedback. Use whenever the user asks for code review, PR review, diff inspection, code audit, quality assessment, or asks for feedback on pasted code — even without explicitly saying 'code review'. Also triggers when the user pastes code and asks for opinions, improvement suggestions, or whether it's ready to merge."
+description: "Perform a thorough, senior-engineer-level code review with actionable feedback. Use whenever the user asks for code review, PR review, diff inspection, code audit, quality assessment, security review, or asks for feedback on pasted code — even without explicitly saying 'code review'. Also triggers when the user pastes code and asks for opinions, improvement suggestions, refactoring suggestions, or whether it's ready to merge or production ready. Triggers on informal requests like 'check my code', 'look over this', 'find bugs in this', 'is this implementation okay', or any time the user shares code and seems to want feedback of any kind."
 ---
 
 # Code Review
@@ -20,7 +20,7 @@ Before writing any feedback, gather the context you need to review effectively:
 - **Understand the intent** — what is this code trying to accomplish? Read commit messages, PR descriptions, or surrounding code if available.
 - **Check related files** — use Grep and Glob to find callers, tests, type definitions, or configuration files that interact with the code under review. Understanding how the code fits into the larger system is critical for catching integration issues.
 - **Check for team conventions** — look for `.editorconfig`, `CONTRIBUTING.md`, style guides, linter configs (`.eslintrc`, `.prettierrc`, `stylecop.json`), or instructions files in the project. When they exist, align your feedback with the team's established conventions rather than imposing generic preferences. Don't flag style issues that the team has explicitly chosen differently.
-- **For PR/diff reviews**: read the full diff context, not just the changed lines. Understand what existed before and what changed. Use `git diff` or `git log` when relevant.
+- **For PR/diff reviews**: read the full diff context, not just the changed lines. Understand what existed before and what changed. Use `git diff` or `git log` when relevant. Also consider: are the commits logically organized? Do commit messages explain the "why"? Is the PR scope focused or does it mix unrelated changes?
 
 **Risk-based depth allocation**: Before diving into analysis, quickly assess the risk profile of the code. Code that handles authentication, payments, user data, cryptography, or system commands warrants deeper security and correctness scrutiny — even if it's only 20 lines. Conversely, a 400-line UI layout change may only need a surface-level scan. Spend your analysis time proportionally to the risk, not just the line count.
 
@@ -66,6 +66,13 @@ Examine the code systematically across these areas. Prioritize based on the code
 - Do tests actually assert meaningful behavior, not just that code runs?
 - Test readability — can someone understand expected behavior from the tests alone?
 
+#### Accessibility (frontend code)
+- Semantic HTML elements used where appropriate (`button` not `div onClick`)
+- Interactive elements are keyboard-accessible (focus management, tab order)
+- Images and icons have meaningful alt text or aria-labels
+- Form inputs have associated labels
+- Color is not the sole means of conveying information
+
 #### Reference Files
 
 When performing analysis, consult these references for comprehensive coverage:
@@ -106,6 +113,7 @@ Structure every review using this format — consistency makes reviews easier to
 - Critical issues: N
 - Suggestions: N
 - Good practices identified: N
+- Verdict: [Ready to merge / Needs changes / Needs significant rework]
 ```
 
 **When there are no issues**: If the code is well-written and you find no critical issues or suggestions, still produce a full review. Write the Summary with your positive assessment, skip the Critical Issues and Suggestions sections (or write "None found"), and focus on the Good Practices section — there's always something worth reinforcing.
@@ -298,6 +306,8 @@ Handle these situations explicitly rather than guessing:
 - **Very large files (>500 lines)**: State which sections you reviewed in depth vs. scanned. Prioritize the most complex or risky sections for deep review.
 - **Configuration files (YAML, JSON, TOML, Dockerfile)**: Focus on security (exposed secrets, insecure defaults), correctness (syntax, valid values), and operational concerns rather than typical code quality patterns.
 - **Multi-language files (HTML + JS + CSS, JSX)**: Organize your review by concern area (security, correctness, performance) rather than by language, since issues often span languages.
+- **Auto-generated code (protobuf, OpenAPI, scaffolding)**: If the code is clearly auto-generated (e.g., contains "DO NOT EDIT" comments, generated file headers), note this and focus only on the generator configuration or template rather than the generated output. Don't review generated code as if it were hand-written.
+- **AI-generated code**: Pay extra attention to hallucinated APIs that don't exist, subtle logic errors that "look right" at first glance, over-engineered solutions for simple problems, and missing error handling. AI-generated code often passes a cursory review but fails on edge cases — test coverage is especially important to validate.
 
 ## Focus Area Parameter
 

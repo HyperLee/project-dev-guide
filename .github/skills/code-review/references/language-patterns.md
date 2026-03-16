@@ -80,12 +80,16 @@ When reviewing code, use this reference for language-specific pitfalls and idiom
 - **Cloning to satisfy the borrow checker**: Often indicates a design issue. Consider restructuring ownership instead.
 - **Large `unsafe` blocks**: Minimize `unsafe` scope. Each `unsafe` block should have a safety comment explaining why the invariants hold.
 - **Not using iterators**: Manual indexing instead of iterator chains loses safety guarantees and composability.
+- **Mutable static variables**: `static mut` is always unsafe and a data race hazard. Use `std::sync::OnceLock`, `Mutex`, or `RwLock` for shared mutable state.
+- **Leaking resources with `mem::forget` or `ManuallyDrop`**: Prevents destructors from running, causing resource leaks.
 
 ### Idiomatic Patterns
 - Use `Result<T, E>` and `?` for error handling
 - Prefer `&str` over `String` in function parameters
 - Use `impl Trait` for return types when the concrete type is an implementation detail
 - Use `derive` macros for common traits
+- Use `thiserror` for library error types and `anyhow` for application error handling
+- Prefer `Vec::with_capacity` when the size is known upfront to avoid reallocations
 
 ## C#
 
@@ -109,9 +113,5 @@ When reviewing code, use this reference for language-specific pitfalls and idiom
 - Prefer `var` only when the type is apparent from the right-hand side; use explicit types otherwise
 - Use primary constructors (C# 12+) for simple dependency injection
 
-### Project Conventions (this project)
-- Follow `.editorconfig` formatting: 4-space indent, CRLF line endings, Allman brace style (brace on new line)
-- System usings sorted first, import groups separated
-- Fields marked `readonly` where possible (enforced as warning)
-- Prefer simple `using` statements over `using` blocks
-- Use expression-bodied members for accessors, indexers, and lambdas — but NOT for constructors, methods, or operators
+### Project-Specific Conventions
+When reviewing C# code, always check the project's `.editorconfig`, `Directory.Build.props`, and analyzer settings for project-specific formatting and style rules. Align your feedback with whatever conventions the project has established rather than imposing defaults. Common configurable conventions include indentation style, brace placement, `using` statement style, expression-bodied member preferences, and import ordering.
