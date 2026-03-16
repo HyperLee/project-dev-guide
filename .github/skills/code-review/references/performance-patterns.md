@@ -132,6 +132,34 @@ for item in list_a:
 **Pattern**: Frequent allocation and deallocation of large objects (>85KB), causing LOH fragmentation and Gen 2 collections.
 **Fix**: Use `ArrayPool<T>` for large byte arrays, `RecyclableMemoryStream` for streams, or `MemoryPool<T>` for buffers.
 
+## Serverless & Cold Start Performance
+
+### Cold Start Overhead
+**Pattern**: Lambda/Cloud Function takes 3-10 seconds on first invocation due to initialization (loading dependencies, establishing connections, JIT compilation).
+**Fix**: Keep functions warm with scheduled pings, use provisioned concurrency for latency-critical paths, minimize dependency bundle size, use lazy initialization for non-essential services.
+
+### Connection Re-establishment Per Invocation
+**Pattern**: Creating new database/Redis connections in each Lambda invocation instead of reusing across warm invocations.
+**Fix**: Initialize connections outside the handler function (module-level). Use connection pooling libraries designed for serverless (e.g., RDS Proxy, `serverless-mysql`, Prisma Data Proxy).
+
+### Over-provisioned Memory / Under-provisioned CPU
+**Pattern**: Serverless CPU is typically proportional to allocated memory. Functions with low memory allocation run slower even if they don't need the RAM.
+**Fix**: Profile with different memory settings — often doubling memory reduces execution time by 50%+, resulting in equal or lower cost.
+
+## WebSocket & Real-Time Performance
+
+### Broadcasting to All Connections Individually
+**Pattern**: Iterating through all connected WebSocket clients and sending messages one by one when broadcasting.
+**Fix**: Use pub/sub infrastructure (Redis Pub/Sub, NATS) for multi-server broadcasts. For single-server, batch messages and use write buffering.
+
+### Missing Heartbeat / Idle Connection Cleanup
+**Pattern**: WebSocket connections that silently disconnect (network change, laptop sleep) remain in the connection pool, consuming memory and causing failed sends.
+**Fix**: Implement ping/pong heartbeats with a timeout. Clean up connections that miss 2-3 consecutive pongs. Most frameworks support this natively.
+
+### Unbounded Message Queue Per Connection
+**Pattern**: Buffering outbound messages without a backpressure mechanism. If a slow client can't keep up, the server's memory grows unboundedly.
+**Fix**: Set a maximum send buffer size per connection. Drop messages, aggregate, or disconnect slow clients when the buffer exceeds the threshold.
+
 ## Performance Review Heuristics
 
 When quantifying performance concerns, consider these thresholds as starting points for discussion (not hard rules):

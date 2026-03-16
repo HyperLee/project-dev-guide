@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: "Perform a thorough, senior-engineer-level code review with actionable feedback. Use whenever the user asks for code review, PR review, diff inspection, code audit, quality assessment, security review, or asks for feedback on pasted code — even without explicitly saying 'code review'. Also triggers when the user pastes code and asks for opinions, improvement suggestions, or whether it's ready to merge or production ready. Triggers on informal requests like 'check my code', 'look over this', 'find bugs in this', 'is this implementation okay', or any time the user shares code and seems to want feedback of any kind. Also triggers on pull request links, GitHub PR URLs, or when the user mentions merging, shipping, or deploying code. Useful for reviewing configuration changes, Dockerfiles, CI/CD pipelines, or infrastructure as code. This skill analyzes and reviews existing code — use other tools for rewriting, refactoring, or bug fixing."
+description: "Perform a thorough, senior-engineer-level code review with actionable feedback. Triggers on: code review, PR review, diff inspection, code audit, quality assessment, security review, feedback on pasted code, or opinions on whether code is merge/production ready. Also triggers on informal requests ('check my code', 'look over this', 'find bugs', 'is this okay', 'anything wrong with this') or when the user shares code seeking feedback. Triggers on PR links, GitHub PR URLs, diffs, and mentions of merging/shipping/deploying. Covers configuration, Dockerfiles, CI/CD pipelines, IaC, and database migrations. This skill analyzes existing code — use other tools for rewriting, refactoring, or fixing."
 ---
 
 # Code Review
@@ -91,9 +91,13 @@ When performing analysis, consult these references for comprehensive coverage:
 ### Step 3: Write the Review
 
 Structure your output using the template below. Adapt the depth to the size of the change:
-- **Small changes (< 50 lines)**: Line-by-line deep analysis. Every detail matters.
-- **Medium changes (50-300 lines)**: Focus on logic, interfaces, and key implementation decisions. Mention style issues only if they harm readability.
-- **Large changes (> 300 lines)**: Start with architecture-level observations. Then drill into the most critical or complex sections. Explicitly note areas you reviewed deeply vs. scanned.
+- **Small changes (< 50 lines)**: Line-by-line deep analysis. Every detail matters. Cover all dimensions.
+- **Medium changes (50-300 lines)**: Focus on logic, interfaces, and key implementation decisions. Mention style issues only if they harm readability. Group related findings that span multiple lines.
+- **Large changes (> 300 lines)**: Start with architecture-level observations. Then drill into the most critical or complex sections. Explicitly note areas you reviewed deeply vs. scanned. Summarize themes rather than listing every minor issue.
+
+**Writing each finding**: For every issue, follow a consistent pattern: (1) identify the problem with specific line/code reference, (2) explain why it matters (impact, risk, who gets hurt), (3) show a concrete fix with a code example. This three-part structure makes each finding independently actionable — the author can understand and fix it without re-reading the entire review.
+
+**Calibrating signal vs. noise**: Before adding a finding to the review, ask: "Would I block a production deploy over this?" If yes, it's Critical. "Would I comment on it in a real-world PR?" If yes, it's a Suggestion. If it's just a personal preference or a minor style nit that a linter should catch, skip it entirely. Reviews that mix real issues with trivial complaints teach developers to ignore all feedback.
 
 ## Output Template
 
@@ -300,6 +304,17 @@ return Object.assign(
 
 ---
 
+## Review Anti-Patterns
+
+Avoid these common reviewer mistakes that reduce the usefulness of a review:
+
+- **Nitpicking formatting and style**: If a linter or formatter could catch it, don't mention it. Focus your review on things that require human judgment — logic, security, design.
+- **Manufacturing problems for clean code**: When code is genuinely well-written, say so. Resist the urge to find fault just to fill sections. A review saying "no critical issues found, here's what you did well" is more valuable than invented complaints.
+- **Overriding team conventions**: If the project has an `.editorconfig`, linter config, or `CONTRIBUTING.md` that specifies a style different from your default preference, the team's choice wins. Don't flag team-sanctioned patterns as issues.
+- **Suggesting rewrites instead of targeted fixes**: A review that says "I would rewrite this differently" isn't actionable. Point out the specific problem and show the minimal fix.
+- **Ignoring context for absolute rules**: "Never use any" is less helpful than "This `any` on line 12 hides a type mismatch that could cause a runtime error." Apply rules in context.
+- **Piling on**: Once you've identified a pattern (e.g., missing error handling in 5 places), mention it once with one example and note "this pattern repeats in N other locations" rather than writing the same feedback 5 times.
+
 ## Special Considerations
 
 When reviewing code, keep these additional aspects in mind when they are relevant to the code at hand. Do not force-check every item for every review — apply judgment about what matters for the specific code.
@@ -309,6 +324,7 @@ When reviewing code, keep these additional aspects in mind when they are relevan
 - **Logging & observability**: Are errors logged with enough context to debug in production?
 - **Configuration & secrets**: Are secrets hardcoded? Are config values properly externalized?
 - **Dependency risks**: Are new dependencies well-maintained, licensed appropriately, not excessive for the need?
+- **Database migrations & schema changes**: Are migrations reversible? Do they include both up and down migrations? Will they lock tables for extended periods on large datasets? Are new columns nullable or have defaults to avoid breaking existing rows? Is there a safe deployment order (migrate before deploy, or deploy before migrate)?
 
 ## Edge Cases
 
@@ -326,5 +342,7 @@ Handle these situations explicitly rather than guessing:
 ## Focus Area Parameter
 
 When the user specifies a focus area via the input below, dedicate roughly 60% of your analysis depth to that area while still performing a baseline check across all other areas. For example, if the focus is "security", do a thorough security audit consulting `references/security-checklist.md`, while still noting obvious correctness or performance issues you spot along the way.
+
+When no focus area is specified, distribute your analysis depth based on the risk-based assessment from Step 1. Security-sensitive code gets deeper security analysis automatically; test files get deeper testing analysis; etc.
 
 Focus on: ${input:focus:Any specific areas to emphasize? (e.g., security, performance, error handling, testing, architecture, concurrency)}

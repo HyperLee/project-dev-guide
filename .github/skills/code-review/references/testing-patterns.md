@@ -2,6 +2,17 @@
 
 Use this reference when evaluating test quality during a code review. Good tests are as important as the code they cover — they serve as living documentation and a safety net for future changes.
 
+## Table of Contents
+- [Common Anti-Patterns](#common-anti-patterns)
+- [What Good Tests Look Like](#what-good-tests-look-like)
+- [Language-Specific Test Patterns](#language-specific-test-patterns)
+- [Test Double Strategy](#test-double-strategy)
+- [Integration & E2E Test Anti-Patterns](#integration--e2e-test-anti-patterns)
+- [Contract Testing](#contract-testing)
+- [Mutation Testing](#mutation-testing)
+- [Property-Based Testing](#property-based-testing)
+- [Snapshot / Golden File Testing](#snapshot--golden-file-testing)
+
 ## Common Anti-Patterns
 
 ### Assertion-Free Tests
@@ -135,6 +146,44 @@ Choose the right test double for the situation:
 **Pattern**: Using `sleep(2000)` or fixed waits to synchronize with async operations in E2E or integration tests.
 **Why it's bad**: Too short → flaky failures; too long → slow test suite. Both vary by machine load.
 **Fix**: Use polling/retry with a condition (e.g., wait until element appears, wait until queue is empty) with a maximum timeout.
+
+## Contract Testing
+
+### When to Suggest Contract Tests
+Contract testing verifies that API producers and consumers agree on the interface contract (request/response shapes, status codes, headers). Suggest contract tests when reviewing:
+- **Microservice API boundaries**: Services that communicate via HTTP/gRPC and are deployed independently
+- **Frontend-backend interfaces**: When the frontend team and backend team work on separate repos/schedules
+- **Third-party API integrations**: When consuming external APIs that may change without notice
+
+### Common Frameworks
+- **Pact**: Consumer-driven contract testing (JS, Java, Python, Go, Ruby, .NET, Rust). Consumer writes expectations, provider verifies.
+- **Spring Cloud Contract**: JVM-focused, contracts written in Groovy DSL or YAML
+- **Specmatic**: Contract-first testing from OpenAPI specs
+
+### Anti-Patterns to Flag
+- **Duplicating contract validation in E2E tests**: If contract tests exist, E2E tests shouldn't re-verify the same API shape — they should focus on user flows
+- **Contracts that test implementation, not interface**: Contracts should verify schema, status codes, and required fields — not internal field ordering or optional fields
+- **Stale contracts**: Contracts committed but never run in CI — they become outdated and give false confidence
+
+## Mutation Testing
+
+### When to Mention Mutation Testing
+Mutation testing measures test suite effectiveness by introducing small code changes (mutants) and checking whether tests catch them. Mention it in reviews when:
+- **Test coverage is high but assertions are weak**: 90% line coverage but tests only assert `!= null` — mutation testing would expose this
+- **Critical business logic with shallow tests**: Payment calculations, access control, or data validation with simple happy-path tests
+- **The team is debating "enough" testing**: Mutation score provides an objective metric beyond line coverage
+
+### Common Frameworks
+- **Stryker**: JavaScript/TypeScript, C#, Scala
+- **PIT (pitest)**: Java/Kotlin — integrates with Maven/Gradle
+- **mutmut**: Python
+- **cargo-mutants**: Rust
+
+### Key Concept: Mutation Score
+`mutation_score = killed_mutants / total_mutants`. A score of 80%+ generally indicates a strong test suite. Below 60% suggests tests are passing without truly validating behavior.
+
+### Anti-Pattern: Pursuing 100% Mutation Score
+Not all mutants are worth killing. Mutants in logging, toString(), or trivial getters/setters are noise. Focus mutation testing on business-critical code paths.
 
 ## Property-Based Testing
 

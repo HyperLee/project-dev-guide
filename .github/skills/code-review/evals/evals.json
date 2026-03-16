@@ -311,6 +311,65 @@
         "Review provides concrete Java code fixes for at least 2 of the concurrency issues",
         "Review follows the structured output template with severity classifications"
       ]
+    },
+    {
+      "id": 21,
+      "files": [],
+      "prompt": "Review this PHP controller from our Laravel app:\n\n```php\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Support\\Facades\\DB;\n\nclass ProductController extends Controller\n{\n    public function search(Request $request)\n    {\n        $query = $request->input('q');\n        $category = $request->input('category', 'all');\n        \n        $results = DB::select(\"SELECT * FROM products WHERE name LIKE '%$query%' AND category = '$category'\");\n        \n        $html = '<div class=\"results\">';\n        foreach ($results as $product) {\n            $html .= \"<div class='product'>\";\n            $html .= \"<h3>{$product->name}</h3>\";\n            $html .= \"<p>Price: \\${$product->price}</p>\";\n            $html .= \"<p>{$product->description}</p>\";\n            $html .= \"</div>\";\n        }\n        $html .= '</div>';\n        \n        return response($html);\n    }\n\n    public function delete($id)\n    {\n        DB::delete(\"DELETE FROM products WHERE id = $id\");\n        return redirect('/products');\n    }\n\n    public function upload(Request $request)\n    {\n        $file = $request->file('image');\n        $filename = $file->getClientOriginalName();\n        $file->move(public_path('uploads'), $filename);\n        \n        DB::insert(\"INSERT INTO products (name, image) VALUES ('{$request->input('name')}', '$filename')\");\n        \n        return redirect('/products');\n    }\n}\n```",
+      "expected_output": "Should identify SQL injection in all three methods, XSS via unescaped HTML output, missing CSRF protection, file upload without validation, using user-supplied filename directly, not using Eloquent ORM or query builder",
+      "expectations": [
+        "Review identifies SQL injection in the search method via string interpolation as 🔴 Critical and recommends parameterized queries or Eloquent",
+        "Review identifies stored XSS via rendering product name and description in raw HTML without htmlspecialchars() or Blade escaping",
+        "Review identifies the file upload accepting any file type with the original user-supplied filename as a security risk (path traversal, executable upload)",
+        "Review identifies SQL injection in the delete method — the $id parameter is not validated as integer",
+        "Review mentions that raw DB::select/insert/delete should use parameter binding or be replaced with Eloquent ORM",
+        "Review identifies missing authorization checks on the delete endpoint",
+        "Review provides concrete PHP code fixes using Laravel conventions (Eloquent, Blade templates, Form Requests)",
+        "Review follows the structured output template with severity classifications"
+      ]
+    },
+    {
+      "id": 22,
+      "files": [],
+      "prompt": "Review this Kotlin Android ViewModel:\n\n```kotlin\nclass UserViewModel : ViewModel() {\n    private var users = mutableListOf<User>()\n    private var isLoading = false\n    \n    fun loadUsers() {\n        isLoading = true\n        GlobalScope.launch {\n            try {\n                val response = RetrofitClient.api.getUsers()\n                users.clear()\n                users.addAll(response.body()!!)\n                isLoading = false\n            } catch (e: Exception) {\n                isLoading = false\n                println(\"Error loading users: $e\")\n            }\n        }\n    }\n    \n    fun deleteUser(id: String) {\n        GlobalScope.launch {\n            RetrofitClient.api.deleteUser(id)\n            users.removeAll { it.id == id }\n        }\n    }\n    \n    fun getFilteredUsers(query: String): List<User> {\n        return users.filter { it.name!!.lowercase().contains(query.lowercase()) }\n    }\n    \n    fun getUserCount(): Int = users.size\n    \n    lateinit var selectedUser: User\n    \n    fun selectUser(user: User) {\n        selectedUser = user\n    }\n    \n    fun getSelectedUserName(): String {\n        return selectedUser.name ?: \"Unknown\"\n    }\n}\n```",
+      "expected_output": "Should identify GlobalScope leak, non-null assertions (!!), mutable state not using LiveData/StateFlow, no error handling on delete, println for logging, lateinit misuse, no UI thread switching, missing null safety",
+      "expectations": [
+        "Review identifies GlobalScope.launch as a 🔴 Critical coroutine leak — should use viewModelScope which is cancelled when ViewModel is cleared",
+        "Review identifies the !! non-null assertion on response.body()!! that will crash with NPE if the response body is null",
+        "Review identifies that UI state (users, isLoading) uses plain mutable fields instead of LiveData or StateFlow — the UI cannot observe changes",
+        "Review identifies that it.name!! in getFilteredUsers will crash if any user has a null name",
+        "Review identifies lateinit var selectedUser will throw UninitializedPropertyAccessException if getSelectedUserName is called before selectUser",
+        "Review identifies missing error handling in deleteUser — network failures are silently ignored",
+        "Review provides concrete Kotlin code fixes using viewModelScope, StateFlow, and proper null handling",
+        "Review follows the structured output template with severity classifications"
+      ]
+    },
+    {
+      "id": 23,
+      "files": [],
+      "prompt": "Review this well-written Go HTTP middleware chain:\n\n```go\npackage middleware\n\nimport (\n\t\"context\"\n\t\"log/slog\"\n\t\"net/http\"\n\t\"time\"\n)\n\ntype contextKey string\n\nconst requestIDKey contextKey = \"requestID\"\n\nfunc RequestID(next http.Handler) http.Handler {\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tid := r.Header.Get(\"X-Request-ID\")\n\t\tif id == \"\" {\n\t\t\tid = generateUUID()\n\t\t}\n\t\tctx := context.WithValue(r.Context(), requestIDKey, id)\n\t\tw.Header().Set(\"X-Request-ID\", id)\n\t\tnext.ServeHTTP(w, r.WithContext(ctx))\n\t})\n}\n\nfunc Logging(logger *slog.Logger) func(http.Handler) http.Handler {\n\treturn func(next http.Handler) http.Handler {\n\t\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\t\tstart := time.Now()\n\t\t\twrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}\n\t\t\tnext.ServeHTTP(wrapped, r)\n\t\t\tlogger.Info(\"request completed\",\n\t\t\t\t\"method\", r.Method,\n\t\t\t\t\"path\", r.URL.Path,\n\t\t\t\t\"status\", wrapped.statusCode,\n\t\t\t\t\"duration\", time.Since(start),\n\t\t\t\t\"request_id\", r.Context().Value(requestIDKey),\n\t\t\t)\n\t\t})\n\t}\n}\n\ntype responseWriter struct {\n\thttp.ResponseWriter\n\tstatusCode int\n\twritten    bool\n}\n\nfunc (rw *responseWriter) WriteHeader(code int) {\n\tif !rw.written {\n\t\trw.statusCode = code\n\t\trw.written = true\n\t}\n\trw.ResponseWriter.WriteHeader(code)\n}\n```",
+      "expected_output": "This is well-written Go code. Review should be positive with minor suggestions. Should NOT manufacture false critical issues.",
+      "expectations": [
+        "Review recognizes this as well-written, idiomatic Go code and states so in the Summary",
+        "Review has zero Critical Issues — the code is correct and the review does NOT manufacture false problems",
+        "Review identifies at least 2 Good Practices (e.g., typed context key preventing collisions, structured logging with slog, response writer wrapping pattern, dependency injection of logger)",
+        "Review may suggest minor improvements (e.g., Hijacker/Flusher interface delegation, Write method to track bytes written) as Suggestions only",
+        "Review does NOT flag the code's style, naming, or structure as problems — it follows standard Go conventions",
+        "Review follows the structured output format with a 'Ready to merge' or 'Needs minor changes' verdict"
+      ]
+    },
+    {
+      "id": 24,
+      "files": [],
+      "prompt": "Review this short utility — just a quick one-liner:\n\n```python\ndef clamp(value, min_val, max_val):\n    return max(min_val, min(value, max_val))\n```",
+      "expected_output": "Very short, correct code. Review should be brief, mostly positive, and NOT over-analyze a simple utility.",
+      "expectations": [
+        "Review is appropriately brief for a small, correct utility — does not produce a lengthy analysis for a one-liner",
+        "Review has zero Critical Issues — this is a correct implementation of clamp",
+        "Review does NOT manufacture issues about missing type hints, docstrings, or input validation for this simple internal utility",
+        "Review identifies at least one Good Practice (e.g., concise, readable, correct boundary handling)",
+        "Review may optionally suggest edge case documentation (behavior when min_val > max_val) but classifies it as a minor Suggestion at most"
+      ]
     }
   ]
 }

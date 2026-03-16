@@ -2,6 +2,16 @@
 
 When reviewing code, use this reference for language-specific pitfalls and idiomatic improvements. Read the section matching the language of the code under review.
 
+## Table of Contents
+- [JavaScript / TypeScript](#javascript--typescript)
+- [Python](#python)
+- [Go](#go)
+- [Java](#java)
+- [Rust](#rust)
+- [C#](#c)
+- [PHP](#php)
+- [Kotlin](#kotlin)
+
 ## JavaScript / TypeScript
 
 ### Common Anti-Patterns

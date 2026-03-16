@@ -84,6 +84,31 @@ Use this checklist when the code under review handles user input, authentication
 - [ ] Field-level authorization is enforced in resolvers, not just at the query entry point
 - [ ] Batch query limits are set to prevent attackers from sending arrays of expensive queries in one request
 
+## File Upload Security
+
+- [ ] File type is validated server-side by content (magic bytes / MIME sniffing), not just file extension — attackers rename `.php` to `.jpg`
+- [ ] Uploaded files are stored outside the web root or served through a proxy that strips executable content
+- [ ] File size limits are enforced server-side (not just client-side) to prevent storage exhaustion
+- [ ] Filenames are sanitized or regenerated (UUID) — user-supplied filenames can contain path traversal, null bytes, or special characters
+- [ ] Image processing libraries are up to date — libraries like ImageMagick have a history of RCE vulnerabilities (ImageTragick)
+- [ ] Uploaded files are scanned for malware when handling user-generated content in sensitive environments
+
+## Container Security
+
+- [ ] Docker images use minimal base images (distroless, alpine) — not full OS images that include unnecessary attack surface
+- [ ] Images are pinned to specific digests (`image@sha256:...`), not just tags — tags are mutable and can be overwritten
+- [ ] Containers do not run as root — use `USER nonroot` or equivalent in Dockerfile
+- [ ] No secrets (API keys, passwords) are baked into Docker image layers — use runtime secrets injection (Docker secrets, Vault, env vars)
+- [ ] Images are scanned for known vulnerabilities in CI (Trivy, Snyk, Grype) before deployment
+- [ ] Docker socket is not mounted into containers unless absolutely necessary (provides host-level access)
+
+## JWT-Specific Security
+
+- [ ] JWT algorithm is explicitly specified and validated server-side — never trust the `alg` header from the token (algorithm confusion attack: `alg: none` or switching RS256 to HS256)
+- [ ] JWT secret keys are sufficiently long (≥256 bits for HS256) and rotated periodically
+- [ ] JWTs carry minimal claims — avoid storing sensitive data in the payload (tokens are base64-encoded, not encrypted)
+- [ ] Token refresh strategy exists — short-lived access tokens (~15 min) with longer-lived refresh tokens stored securely
+
 ## gRPC Security
 
 - [ ] mTLS is configured for service-to-service communication — not just server-side TLS
