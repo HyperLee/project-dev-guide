@@ -63,3 +63,26 @@ Use this checklist when the code under review handles user input, authentication
 - [ ] Security-relevant events are logged (failed auth, permission denied, input validation failures)
 - [ ] Log entries include sufficient context for debugging (request ID, user ID, timestamp) without leaking secrets
 - [ ] Audit trail exists for destructive or privileged operations
+
+## WebSocket Security
+
+- [ ] WebSocket connections require authentication (token validation on connection, not just on HTTP upgrade)
+- [ ] Server validates origin header to prevent cross-site WebSocket hijacking
+- [ ] Message payloads are validated — WebSocket messages bypass standard HTTP input validation middleware
+- [ ] Rate limiting is applied per connection to prevent message flooding
+- [ ] Connection limits per user/IP are enforced to prevent resource exhaustion
+
+## GraphQL Security
+
+- [ ] Query depth limiting is configured to prevent deeply nested queries that cause exponential backend work
+- [ ] Query complexity/cost analysis is implemented — a single query can trigger thousands of resolver calls
+- [ ] Introspection is disabled in production (attackers use it to map the entire schema)
+- [ ] Field-level authorization is enforced in resolvers, not just at the query entry point
+- [ ] Batch query limits are set to prevent attackers from sending arrays of expensive queries in one request
+
+## gRPC Security
+
+- [ ] mTLS is configured for service-to-service communication — not just server-side TLS
+- [ ] Message size limits are set (default unlimited in many gRPC implementations)
+- [ ] Deadline/timeout propagation is configured to prevent cascading slowdowns
+- [ ] Interceptors enforce authentication and authorization on all RPC methods

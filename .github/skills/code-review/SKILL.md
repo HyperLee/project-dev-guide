@@ -1,6 +1,6 @@
 ﻿---
 name: code-review
-description: "Perform a thorough, senior-engineer-level code review with actionable feedback. Use whenever the user asks for code review, PR review, diff inspection, code audit, quality assessment, security review, or asks for feedback on pasted code — even without explicitly saying 'code review'. Also triggers when the user pastes code and asks for opinions, improvement suggestions, refactoring suggestions, or whether it's ready to merge or production ready. Triggers on informal requests like 'check my code', 'look over this', 'find bugs in this', 'is this implementation okay', or any time the user shares code and seems to want feedback of any kind."
+description: "Perform a thorough, senior-engineer-level code review with actionable feedback. Use whenever the user asks for code review, PR review, diff inspection, code audit, quality assessment, security review, or asks for feedback on pasted code — even without explicitly saying 'code review'. Also triggers when the user pastes code and asks for opinions, improvement suggestions, refactoring suggestions, or whether it's ready to merge or production ready. Triggers on informal requests like 'check my code', 'look over this', 'find bugs in this', 'is this implementation okay', or any time the user shares code and seems to want feedback of any kind. Also triggers on pull request links, GitHub PR URLs, or when the user mentions merging, shipping, or deploying code. Useful for reviewing configuration changes, Dockerfiles, CI/CD pipelines, or infrastructure as code."
 ---
 
 # Code Review
@@ -97,7 +97,7 @@ Structure your output using the template below. Adapt the depth to the size of t
 
 ## Output Template
 
-Structure every review using this format — consistency makes reviews easier to scan and act on:
+Structure every review using this format. Consistent formatting makes reviews easier to scan and act on, and lets authors quickly find what matters most:
 
 ```
 ## Code Review: [file name, PR title, or brief description]
@@ -126,6 +126,8 @@ Structure every review using this format — consistency makes reviews easier to
 - **Ready to merge** — zero critical issues, suggestions are optional improvements only
 - **Needs minor changes** — no critical issues but has suggestions that should be addressed, or has 1 low-severity critical issue with a straightforward fix
 - **Needs significant rework** — has critical issues that affect security, correctness, or data integrity, or has fundamental design problems that require restructuring
+
+**When the verdict is "Needs significant rework"**: Provide a prioritized action plan — list the top 3 things the author should fix first, in order of severity, so they have a clear starting point rather than an overwhelming wall of issues.
 
 **When there are no issues**: If the code is well-written and you find no critical issues or suggestions, still produce a full review. Write the Summary with your positive assessment, skip the Critical Issues and Suggestions sections (or write "None found"), and focus on the Good Practices section — there's always something worth reinforcing.
 
@@ -318,7 +320,8 @@ Handle these situations explicitly rather than guessing:
 - **Configuration files (YAML, JSON, TOML, Dockerfile)**: Focus on security (exposed secrets, insecure defaults), correctness (syntax, valid values), and operational concerns rather than typical code quality patterns.
 - **Multi-language files (HTML + JS + CSS, JSX)**: Organize your review by concern area (security, correctness, performance) rather than by language, since issues often span languages.
 - **Auto-generated code (protobuf, OpenAPI, scaffolding)**: If the code is clearly auto-generated (e.g., contains "DO NOT EDIT" comments, generated file headers), note this and focus only on the generator configuration or template rather than the generated output. Don't review generated code as if it were hand-written.
-- **AI-generated code**: Pay extra attention to hallucinated APIs that don't exist, subtle logic errors that "look right" at first glance, over-engineered solutions for simple problems, and missing error handling. AI-generated code often passes a cursory review but fails on edge cases — test coverage is especially important to validate.
+- **AI-generated code**: Pay extra attention to hallucinated APIs that don't exist, subtle logic errors that "look right" at first glance, over-engineered solutions for simple problems, and missing error handling. AI-generated code often passes a cursory review but fails on edge cases — test coverage is especially important to validate. Also watch for: inconsistent coding style between AI-generated and human-written sections, boilerplate that should have been adapted to the project's conventions, and placeholder values left in production code (e.g., "TODO", "your-api-key-here", example.com URLs).
+- **Mixed-concern changes (feature + refactor + dependency bump)**: When a PR mixes unrelated concerns, note the mixing in your Summary and suggest splitting into focused PRs. Still review all changes, but call out which findings relate to which concern to help the author untangle them.
 
 ## Focus Area Parameter
 

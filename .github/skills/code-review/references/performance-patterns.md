@@ -107,3 +107,37 @@ for item in list_a:
 ### Cache Stampede (Thundering Herd)
 **Pattern**: A popular cache key expires and many concurrent requests simultaneously hit the database to regenerate it.
 **Fix**: Use lock/mutex on cache miss so only one request regenerates the cache. Alternatively, use background refresh before expiry or probabilistic early expiration.
+
+## Network Performance
+
+### Connection Pool Exhaustion
+**Pattern**: Creating a new connection (HTTP, DB, Redis) per request instead of reusing pooled connections.
+**Fix**: Use connection pooling (e.g., `IHttpClientFactory` in C#, connection pool in DB drivers, `aiohttp.ClientSession` in Python). Configure pool size limits appropriate to expected concurrency.
+
+### Chatty Service Communication
+**Pattern**: Multiple small network calls between services when a single batch call would suffice (similar to N+1 but across services rather than DB).
+**Fix**: Use batch APIs, aggregate endpoints, or consider GraphQL for flexible data fetching across service boundaries.
+
+### Missing Compression
+**Pattern**: Transferring large payloads (JSON, HTML, static assets) without gzip/brotli compression.
+**Fix**: Enable response compression at the server or reverse proxy level. For APIs transferring large payloads, consider binary formats (Protocol Buffers, MessagePack).
+
+## GC Pressure & Object Allocation
+
+### Excessive Short-Lived Allocations
+**Pattern**: Creating many temporary objects in hot loops (e.g., string concatenation, boxing value types, LINQ in tight loops in C#).
+**Fix**: Use `StringBuilder` for string building, `Span<T>` / `stackalloc` for temporary buffers (C#), or pre-allocated buffers. In Java, watch for autoboxing in loops (`Integer` vs `int`).
+
+### Large Object Heap Fragmentation (C#/.NET)
+**Pattern**: Frequent allocation and deallocation of large objects (>85KB), causing LOH fragmentation and Gen 2 collections.
+**Fix**: Use `ArrayPool<T>` for large byte arrays, `RecyclableMemoryStream` for streams, or `MemoryPool<T>` for buffers.
+
+## Performance Review Heuristics
+
+When quantifying performance concerns, consider these thresholds as starting points for discussion (not hard rules):
+
+- **API response time**: >200ms for simple reads, >1s for complex writes — investigate
+- **Database queries per request**: >5 queries for a single endpoint — likely N+1 or missing joins
+- **Memory allocation per request**: Growing linearly with request count — likely a leak
+- **Time complexity**: If input can exceed ~1000 items and algorithm is O(n²) — flag it
+- **Bundle size**: >500KB JS for initial load without code splitting — flag it

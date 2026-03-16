@@ -135,3 +135,38 @@ Choose the right test double for the situation:
 **Pattern**: Using `sleep(2000)` or fixed waits to synchronize with async operations in E2E or integration tests.
 **Why it's bad**: Too short → flaky failures; too long → slow test suite. Both vary by machine load.
 **Fix**: Use polling/retry with a condition (e.g., wait until element appears, wait until queue is empty) with a maximum timeout.
+
+## Property-Based Testing
+
+### When to Suggest Property-Based Tests
+Property-based testing (PBT) generates random inputs and checks that invariants hold. Suggest PBT in reviews when you see:
+- **Serialization/deserialization**: `decode(encode(x)) == x` for all x
+- **Sorting/ordering**: Output is always sorted, length is preserved, same elements
+- **Parsers/formatters**: `parse(format(x)) == x`, format always produces valid output
+- **Mathematical operations**: Commutativity, associativity, identity element
+- **Data transformations**: Idempotency (`f(f(x)) == f(x)`), reversibility
+
+### Common Frameworks
+- Python: `hypothesis` — `@given(st.lists(st.integers()))` generates random lists of integers
+- JavaScript/TypeScript: `fast-check` — `fc.property(fc.array(fc.integer()), arr => ...)`
+- C#: `FsCheck` or `FsCheck.Xunit` — `[Property] public bool MyProperty(int[] arr) => ...`
+- Java: `jqwik` — `@ForAll List<Integer> items`
+- Rust: `proptest` — `proptest! { fn my_test(s in ".*") { ... } }`
+
+### Anti-Pattern: Using PBT as a Fuzz Substitute
+PBT frameworks generate structured, typed data — they are not fuzz testers. Don't use them to test raw byte parsing or find crashes in unsafe code; use actual fuzzers (AFL, libFuzzer) for that.
+
+## Snapshot / Golden File Testing
+
+### When Snapshots Help
+- Complex output that's tedious to assert field-by-field (serialized JSON, HTML rendering, CLI output)
+- Detecting unintended changes in stable output (API responses, generated code)
+
+### Anti-Patterns to Flag
+- **Snapshot churn**: If snapshots need updating every PR, they've become a rubber stamp — the reviewer just approves "update snapshots" without checking the diff
+- **Snapshotting volatile data**: Timestamps, random IDs, or machine-specific paths in snapshots cause false failures
+- **Oversized snapshots**: Snapshot files >500 lines are hard to review in diffs — consider snapshotting a subset or key sections
+- **Snapshot-only testing**: Snapshots verify "output didn't change" but don't verify "output is correct" — pair with targeted assertions for critical properties
+
+### Fix for Volatile Data
+Normalize or mask volatile fields before snapshotting (e.g., replace timestamps with `"<TIMESTAMP>"`, replace UUIDs with `"<UUID>"`).
