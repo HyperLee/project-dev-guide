@@ -161,15 +161,82 @@ Hooks 讓你可以在 Copilot 代理執行流程中的**關鍵生命週期節點
 #!/bin/bash
 
 # Stop Hook - Auto-commit and push changes on session exit
+# Generates Conventional Commits style messages with file change details.
 
 set -euo pipefail
+
+# Infer Conventional Commits type from file extensions.
+# Tallies each file into a category and returns the predominant type.
+infer_commit_type() {
+  local files="$1"
+  local docs=0 config=0 code=0 tests=0 ci=0
+
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    case "$f" in
+      *.md|*.txt|*.rst|*.adoc)              ((docs++))   || true ;;
+      .github/workflows/*|.github/actions/*) ((ci++))     || true ;;
+      *.test.*|*.spec.*|*_test.*|*Test.*|*Tests.*|*_spec.*) ((tests++)) || true ;;
+      *.json|*.yml|*.yaml|*.toml|*.xml|*.editorconfig|*.gitignore|*.sh|*.ps1|*.bash) ((config++)) || true ;;
+      *)                                     ((code++))   || true ;;
+    esac
+  done <<< "$files"
+
+  local max=$docs type="docs"
+  [[ $config -gt $max ]] && max=$config && type="chore"
+  [[ $code   -gt $max ]] && max=$code   && type="feat"
+  [[ $tests  -gt $max ]] && max=$tests  && type="test"
+  [[ $ci     -gt $max ]] && max=$ci     && type="ci"
+  echo "$type"
+}
+
+# Build a Conventional Commits message from the staged changes.
+generate_commit_message() {
+  local name_status file_list
+  name_status=$(git diff --cached --name-status)
+  file_list=$(echo "$name_status" | awk '{print $NF}')
+
+  local added modified deleted
+  added=$(echo "$name_status"   | grep -c '^A' || true)
+  modified=$(echo "$name_status" | grep -c '^M' || true)
+  deleted=$(echo "$name_status"  | grep -c '^D' || true)
+
+  # --- type ---
+  local type
+  type=$(infer_commit_type "$file_list")
+
+  # --- summary line ---
+  local parts=()
+  [[ $modified -gt 0 ]] && parts+=("update ${modified} file(s)")
+  [[ $added    -gt 0 ]] && parts+=("add ${added} file(s)")
+  [[ $deleted  -gt 0 ]] && parts+=("remove ${deleted} file(s)")
+  local summary
+  summary=$(IFS=', '; echo "${parts[*]}")
+
+  # --- body: file list (truncated at 15) + shortstat ---
+  local file_count body shortstat
+  file_count=$(echo "$name_status" | grep -c . || true)
+
+  if [[ $file_count -le 15 ]]; then
+    body="$name_status"
+  else
+    body=$(echo "$name_status" | head -15)
+    body+=$'\n'"... and $((file_count - 15)) more file(s)"
+  fi
+
+  shortstat=$(git diff --cached --shortstat)
+
+  printf '%s: %s\n\n%s\n\n%s' "$type" "$summary" "$body" "$shortstat"
+}
 
 if git rev-parse --is-inside-work-tree &>/dev/null; then
   if [[ -n "$(git status --porcelain)" ]]; then
     echo "📦 Auto-committing and pushing changes..."
     git add -A
-    TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-    git commit -m "auto-commit: $TIMESTAMP" --no-verify 2>/dev/null || true
+
+    COMMIT_MSG=$(generate_commit_message)
+
+    git commit -m "$COMMIT_MSG" --no-verify 2>/dev/null || true
     git push 2>/dev/null && echo "✅ Changes pushed successfully." || echo "⚠️  Push failed."
   else
     echo "📦 No changes to push."
@@ -180,17 +247,18 @@ exit 0
 ```
 [^15]
 
-### 3.2 逐行深入解析
+### 3.2 核心邏輯解析
 
 #### Shebang 與註解
 
 ```bash
 #!/bin/bash
 # Stop Hook - Auto-commit and push changes on session exit
+# Generates Conventional Commits style messages with file change details.
 ```
 
 - `#!/bin/bash`：指定使用 Bash 作為直譯器（hooks 腳本需要正確的 shebang）[^11]
-- 註解明確說明用途：在 Copilot session 退出時自動 commit 並 push
+- 註解明確說明用途與 commit message 格式
 
 #### 嚴格模式設定
 
@@ -204,86 +272,51 @@ set -euo pipefail
 | `-u` | 使用未定義變數時報錯退出 |
 | `-o pipefail` | 管線中任何一個命令失敗時，整個管線的結束碼為失敗 |
 
-這是 Shell 腳本的最佳實踐，確保錯誤不會被靜默忽略。
+#### `infer_commit_type()` — 推斷 Commit 類型
 
-#### Git 環境檢查
+根據變更檔案的副檔名，統計各類別數量後回傳**佔比最高的類型**：
 
-```bash
-if git rev-parse --is-inside-work-tree &>/dev/null; then
+| 檔案模式 | 對應類型 | 範例 |
+|---------|---------|------|
+| `*.md`, `*.txt`, `*.rst`, `*.adoc` | `docs` | README.md、CHANGELOG.md |
+| `.github/workflows/*`, `.github/actions/*` | `ci` | ci.yml |
+| `*.test.*`, `*.spec.*`, `*Test.*` | `test` | UserTest.cs、app.spec.ts |
+| `*.json`, `*.yml`, `*.sh`, `*.editorconfig` 等 | `chore` | hooks.json、stop-hook.sh |
+| 其他所有檔案 | `feat` | main.cs、index.ts |
+
+> 注意：使用 `((count++)) || true` 避免 `set -e` 下算術結果為 0 時觸發退出。
+
+#### `generate_commit_message()` — 產生 Commit 訊息
+
+此函式在 `git add -A` 之後呼叫，分三個步驟：
+
+1. **分析暫存區**：`git diff --cached --name-status` 取得檔案狀態（A/M/D）
+2. **組合 summary 行**：統計新增、修改、刪除數量（如 `update 2 file(s), add 1 file(s)`）
+3. **組合 body**：列出具體檔案清單（超過 15 個時截斷）+ `git diff --cached --shortstat`
+
+輸出格式遵循 [Conventional Commits](https://www.conventionalcommits.org/)：
+
+```
+<type>: <summary>
+
+<file list with status>
+
+<shortstat>
 ```
 
-- `git rev-parse --is-inside-work-tree`：檢查當前目錄是否在 Git 工作樹內
-- `&>/dev/null`：將 stdout 與 stderr 都導向 /dev/null（靜默執行）
-- **防禦性程式設計**：如果不在 Git 倉庫中，整個腳本會跳過所有操作
-
-#### 檢查是否有未提交的變更
-
-```bash
-if [[ -n "$(git status --porcelain)" ]]; then
-```
-
-- `git status --porcelain`：以機器可讀的格式輸出變更狀態
-  - 有變更時輸出不為空（如 `M  file.txt`、`?? new-file.txt`）
-  - 無變更時輸出為空
-- `-n`：判斷字串是否非空（有內容 = 有未提交的變更）
-
-#### 暫存所有變更
+#### 主流程：環境檢查 → 暫存 → 提交 → 推送
 
 ```bash
 git add -A
+COMMIT_MSG=$(generate_commit_message)
+git commit -m "$COMMIT_MSG" --no-verify 2>/dev/null || true
+git push 2>/dev/null && echo "✅ ..." || echo "⚠️ ..."
 ```
 
-- `-A`（`--all`）：暫存所有變更，包括：
-  - 修改的檔案（modified）
-  - 新增的檔案（untracked）
-  - 刪除的檔案（deleted）
-- 等同於在 repo 根目錄執行 `git add .` + `git add -u`
-
-#### 產生時間戳並提交
-
-```bash
-TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-git commit -m "auto-commit: $TIMESTAMP" --no-verify 2>/dev/null || true
-```
-
-- `date '+%Y-%m-%d %H:%M:%S'`：產生格式化時間戳（如 `2026-03-28 15:45:12`）
-- Commit 訊息格式：`auto-commit: 2026-03-28 15:45:12`
-- **`--no-verify`**：跳過 Git 的 pre-commit 和 commit-msg hooks
-  - 這很重要！避免 Git hooks（如 linting）阻止自動 commit
-- `2>/dev/null`：隱藏 stderr（如果 commit 失敗不顯示錯誤）
-- `|| true`：即使 commit 失敗也不中止腳本（因為 `set -e` 會讓失敗命令中止執行）
-
-#### 推送至遠端
-
-```bash
-git push 2>/dev/null && echo "✅ Changes pushed successfully." || echo "⚠️  Push failed."
-```
-
-- `git push`：推送到當前追蹤的遠端分支
-- `2>/dev/null`：隱藏 push 的 stderr 輸出
-- 使用 `&&` / `||` 進行條件式回饋：
-  - 成功 → 顯示 `✅ Changes pushed successfully.`
-  - 失敗 → 顯示 `⚠️  Push failed.`（例如沒有遠端、網路問題、權限不足）
-
-#### 無變更的處理
-
-```bash
-else
-    echo "📦 No changes to push."
-fi
-```
-
-- 當 `git status --porcelain` 為空（沒有變更）時的友善提示
-
-#### 確保正常退出
-
-```bash
-exit 0
-```
-
-- 無論什麼情況都以 exit code 0 結束
-- 這是 hook 腳本的最佳實踐：hooks 失敗不應阻擋代理的正常執行[^6]
-- 官方文件指出：「Hook 失敗（非零退出碼或超時）會被記錄並跳過——它們永遠不會阻擋代理執行」[^6]
+- **`git add -A`**：暫存所有變更（modified、untracked、deleted）
+- **`--no-verify`**：跳過 Git pre-commit/commit-msg hooks，避免 linting 阻擋自動提交
+- **`|| true`**：確保 commit 失敗不會中止腳本（`set -e` 保護）
+- **`exit 0`**：無論結果都正常退出，hook 失敗不應阻擋代理執行[^6]
 
 ### 3.3 執行流程圖
 
@@ -305,8 +338,14 @@ stop-hook.sh 被觸發
    ▼    └──────► 顯示 "📦 No changes to push." → exit 0
 ┌─────────────────────────┐
 │ git add -A              │
-│ git commit (with ts)    │
-│ git push                │
+├─────────────────────────┤
+│ generate_commit_message │
+│  ├ git diff --cached    │
+│  ├ infer_commit_type()  │
+│  ├ summary + body       │
+│  └ shortstat            │
+├─────────────────────────┤
+│ git commit + git push   │
 └───────┬─────────────────┘
         │
    ┌────┴────┐
@@ -321,14 +360,38 @@ stop-hook.sh 被觸發
      exit 0
 ```
 
-### 3.4 潛在風險與注意事項
+### 3.4 Commit Message 範例
+
+修改 2 個 Markdown 檔案、新增 1 個 JSON 設定檔時，產生的 commit message：
+
+```
+docs: update 2 file(s), add 1 file(s)
+
+M	README.md
+M	github-hooks.md
+A	.github/hooks/hooks.json
+
+ 3 files changed, 45 insertions(+), 12 deletions(-)
+```
+
+僅修改 1 個 Shell 腳本時：
+
+```
+chore: update 1 file(s)
+
+M	.github/hooks/stop-hook.sh
+
+ 1 file changed, 69 insertions(+), 2 deletions(-)
+```
+
+### 3.5 潛在風險與注意事項
 
 | 風險 | 說明 | 建議 |
 |------|------|------|
 | 敏感資料洩漏 | `git add -A` 會加入所有檔案，包括可能的 `.env`、金鑰等 | 確保 `.gitignore` 完善 |
 | 合併衝突 | 如果遠端有新的 commit，`git push` 會失敗 | 腳本已用 `\|\| echo "⚠️"` 處理 |
 | 繞過品質檢查 | `--no-verify` 跳過所有 Git hooks | 這是有意設計，自動 commit 不需要 linting |
-| 不明確的 commit 歷史 | 大量 `auto-commit: <timestamp>` 會汙染 git log | 可考慮之後 squash 或 rebase |
+| 類型推斷不精確 | 自動推斷的 type 可能與實際意圖不符（如 bug fix 被標為 feat） | 可之後用 `git rebase -i` 調整 |
 | 腳本權限 | Unix 需要執行權限 | 確保執行過 `chmod +x .github/hooks/stop-hook.sh` |
 
 ---
@@ -354,8 +417,10 @@ stop-hook.sh 被觸發
 │  1. 檢查 Git 環境        │
 │  2. 檢查是否有變更        │
 │  3. git add -A           │
-│  4. git commit           │
-│  5. git push             │
+│  4. 分析變更 → 推斷 type  │
+│  5. 產生 Conventional     │
+│     Commits 格式訊息      │
+│  6. git commit + push    │
 └──────────────────────────┘
 ```
 
@@ -367,13 +432,14 @@ stop-hook.sh 被觸發
 
 ## 五、改善建議（✅ 已完成）
 
-以下改善項目已套用至 `hooks.json`：
+以下改善項目已套用至 `hooks.json` 與 `stop-hook.sh`：
 
 1. ✅ `"Stop"` → `"sessionEnd"`（使用官方標準事件名稱）
 2. ✅ `"command"` → `"bash"`（使用官方標準欄位名稱）
 3. ✅ 新增 `"cwd": "."`（明確指定工作目錄）
 4. ✅ 新增 `"timeoutSec": 30`（明確設定超時時間）
 5. ✅ `stop-hook.sh` 已加上執行權限（`chmod +x`）
+6. ✅ Commit message 從無意義的 `auto-commit: <timestamp>` 改為 **Conventional Commits** 格式，自動推斷類型並列出變更檔案
 
 如果希望在 **主代理完成回應時**（而非整個會話結束時）觸發，則使用 `"agentStop"` 作為事件名稱。
 
