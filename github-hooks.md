@@ -475,7 +475,7 @@ M	.github/hooks/stop-hook.sh
 
 [^8]: [GitHub Docs — Hooks configuration reference](https://docs.github.com/en/copilot/reference/hooks-configuration)：包含所有 hook 類型的完整 input/output 格式、腳本最佳實踐與進階模式。
 
-[^9]: `/Users/qiuzili/project-dev-guide/.github/hooks/hooks.json`：第 1-11 行。
+[^9]: `project-dev-guide/.github/hooks/hooks.json`：第 1-11 行。
 
 [^10]: [GitHub Docs — About hooks](https://docs.github.com/en/copilot/concepts/agents/coding-agent/about-hooks)：「The JSON must contain a `version` field with a value of `1`.」
 
@@ -487,4 +487,4 @@ M	.github/hooks/stop-hook.sh
 
 [^14]: [GitHub Docs — About hooks, Hook configuration format](https://docs.github.com/en/copilot/concepts/agents/coding-agent/about-hooks#hook-configuration-format)：標準格式使用 `bash`、`powershell`、`cwd`、`env`、`timeoutSec` 欄位。
 
-[^15]: `/Users/qiuzili/project-dev-guide/.github/hooks/stop-hook.sh`：第 1-19 行。
+[^15]: `project-dev-guide/.github/hooks/stop-hook.sh`：第 1-19 行。
