@@ -461,7 +461,7 @@ M	.github/hooks/stop-hook.sh
 
 [^1]: [GitHub Docs — About hooks](https://docs.github.com/en/copilot/concepts/agents/coding-agent/about-hooks)：「Copilot agents support hooks stored in JSON files in your repository at `.github/hooks/*.json`.」
 
-[^2]: `/Users/qiuzili/project-dev-guide/.github/hooks/`：包含 `hooks.json` 與 `stop-hook.sh` 兩個檔案。
+[^2]: `project-dev-guide/.github/hooks/`：包含 `hooks.json` 與 `stop-hook.sh` 兩個檔案。
 
 [^3]: [GitHub Docs — Using hooks with GitHub Copilot agents](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/use-hooks)：「Create a new `hooks.json` file... in the `.github/hooks/` folder of your repository.」
 
