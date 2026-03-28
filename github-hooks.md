@@ -5,7 +5,7 @@
 `.github/hooks/` 是 GitHub Copilot 代理（Copilot CLI 與 Copilot coding agent）的 **Hooks 機制設定資料夾**，用於在代理工作階段的特定生命週期時刻（如啟動、結束、工具執行前後等）自動執行自訂的 Shell 腳本。Copilot agents 會自動從 `.github/hooks/*.json` 讀取所有 JSON 設定檔[^1]，然後根據其中定義的事件觸發對應腳本。
 
 在本專案（`project-dev-guide`）中，`.github/hooks/` 內包含兩個檔案[^2]：
-1. **`hooks.json`** — Hook 設定檔，定義在 `Stop` 事件觸發時執行 `stop-hook.sh`
+1. **`hooks.json`** — Hook 設定檔，定義在 `sessionEnd` 事件觸發時執行 `stop-hook.sh`
 2. **`stop-hook.sh`** — Shell 腳本，在 Copilot 會話結束時自動將所有變更 commit 並 push 至遠端
 
 ---
@@ -68,15 +68,17 @@ Hooks 讓你可以在 Copilot 代理執行流程中的**關鍵生命週期節點
 
 ```json
 {
-	"version": 1,
-	"hooks": {
-		"Stop": [
-			{
-				"type": "command",
-				"command": ".github/hooks/stop-hook.sh"
-			}
-		]
-	}
+  "version": 1,
+  "hooks": {
+    "sessionEnd": [
+      {
+        "type": "command",
+        "bash": ".github/hooks/stop-hook.sh",
+        "cwd": ".",
+        "timeoutSec": 30
+      }
+    ]
+  }
 }
 ```
 [^9]
@@ -97,73 +99,44 @@ Hooks 讓你可以在 Copilot 代理執行流程中的**關鍵生命週期節點
 
 ```json
 "hooks": {
-    "Stop": [...]
+    "sessionEnd": [...]
 }
 ```
 
 - 以事件名稱為 key，值為 hook 定義陣列
 - 每個事件可以對應多個 hook（依序執行）
 
-#### `"Stop"` 事件
+#### `"sessionEnd"` 事件
 
-這是本專案使用的事件名稱。
+本專案使用 `sessionEnd` 作為 hook 觸發事件，代表在 Copilot 代理會話結束或被終止時執行。根據官方文件[^12]，`sessionEnd` 的輸入 JSON 包含：
 
-> ⚠️ **重要注意事項**：根據官方文件[^12]，標準的 hook 事件名稱為 `sessionStart`、`sessionEnd`、`userPromptSubmitted`、`preToolUse`、`postToolUse`、`agentStop`、`subagentStop`、`errorOccurred`。
->
-> 本專案使用的 `"Stop"` **不在官方文件列出的標準事件名稱中**。根據語意推斷，它最可能對應：
-> - **`agentStop`**：主代理完成一輪回應時觸發
-> - **`sessionEnd`**：整個會話結束時觸發
->
-> 由於 `stop-hook.sh` 的功能是「在結束時 auto-commit 並 push」，語意上更接近 `sessionEnd`。
->
-> 建議將 `"Stop"` 改為官方文件中標準的事件名稱（如 `"sessionEnd"` 或 `"agentStop"`），以確保相容性。
+- `timestamp`：Unix 時間戳（毫秒）
+- `cwd`：當前工作目錄
+- `reason`：結束原因，可能為 `"complete"`、`"error"`、`"abort"`、`"timeout"` 或 `"user_exit"`
+
+此事件的輸出會被忽略（僅用於側效果，如日誌記錄或清理作業）。
 
 #### Hook 定義物件
 
 ```json
 {
     "type": "command",
-    "command": ".github/hooks/stop-hook.sh"
+    "bash": ".github/hooks/stop-hook.sh",
+    "cwd": ".",
+    "timeoutSec": 30
 }
 ```
 
 | 欄位 | 值 | 說明 |
 |-----|---|-----|
 | `type` | `"command"` | **必填**。目前唯一支援的類型（另有 `"prompt"` 僅用於 `sessionStart`）[^13] |
-| `command` | `".github/hooks/stop-hook.sh"` | 要執行的腳本路徑 |
+| `bash` | `".github/hooks/stop-hook.sh"` | Unix 系統要執行的腳本路徑 |
+| `cwd` | `"."` | 腳本工作目錄（相對於 repo root） |
+| `timeoutSec` | `30` | 最大執行秒數 |
 
-> ⚠️ **另一個注意事項**：官方文件的標準格式使用 `bash` 和 `powershell` 作為分開的欄位[^14]，而非 `command`。例如：
-> ```json
-> {
->     "type": "command",
->     "bash": "./scripts/cleanup.sh",
->     "powershell": "./scripts/cleanup.ps1",
->     "cwd": ".",
->     "timeoutSec": 30
-> }
-> ```
->
-> 本專案使用的 `"command"` 欄位可能是 Copilot CLI 的簡化格式或早期語法。為確保跨平台相容性，建議改用 `"bash"` 欄位。
+### 2.3 目前設定與官方標準格式一致
 
-### 2.3 官方標準格式對照
-
-以下是按照官方建議的標準格式，等效的 `hooks.json` 應該長這樣：
-
-```json
-{
-  "version": 1,
-  "hooks": {
-    "sessionEnd": [
-      {
-        "type": "command",
-        "bash": ".github/hooks/stop-hook.sh",
-        "cwd": ".",
-        "timeoutSec": 30
-      }
-    ]
-  }
-}
-```
+目前的 `hooks.json` 已完全符合官方建議的標準格式，使用 `sessionEnd` 事件名稱、`bash` 欄位、並明確指定 `cwd` 與 `timeoutSec`。
 
 ### 2.4 可選的額外設定欄位
 
@@ -367,7 +340,7 @@ stop-hook.sh 被觸發
 │  Copilot CLI / Agent     │
 │  會話生命週期             │
 └──────────┬───────────────┘
-           │ 觸發 "Stop" 事件
+           │ 觸發 "sessionEnd" 事件
            ▼
 ┌──────────────────────────┐
 │  hooks.json              │
@@ -392,31 +365,15 @@ stop-hook.sh 被觸發
 
 ---
 
-## 五、改善建議
+## 五、改善建議（✅ 已完成）
 
-為了確保與最新官方文件相容[^14]，建議將 `hooks.json` 更新為以下格式：
+以下改善項目已套用至 `hooks.json`：
 
-```json
-{
-  "version": 1,
-  "hooks": {
-    "sessionEnd": [
-      {
-        "type": "command",
-        "bash": ".github/hooks/stop-hook.sh",
-        "cwd": ".",
-        "timeoutSec": 30
-      }
-    ]
-  }
-}
-```
-
-主要變更：
-1. `"Stop"` → `"sessionEnd"`（使用官方標準事件名稱）
-2. `"command"` → `"bash"`（使用官方標準欄位名稱）
-3. 新增 `"cwd": "."`（明確指定工作目錄）
-4. 新增 `"timeoutSec": 30`（明確設定超時時間）
+1. ✅ `"Stop"` → `"sessionEnd"`（使用官方標準事件名稱）
+2. ✅ `"command"` → `"bash"`（使用官方標準欄位名稱）
+3. ✅ 新增 `"cwd": "."`（明確指定工作目錄）
+4. ✅ 新增 `"timeoutSec": 30`（明確設定超時時間）
+5. ✅ `stop-hook.sh` 已加上執行權限（`chmod +x`）
 
 如果希望在 **主代理完成回應時**（而非整個會話結束時）觸發，則使用 `"agentStop"` 作為事件名稱。
 
@@ -427,11 +384,10 @@ stop-hook.sh 被觸發
 | 項目 | 信心度 | 說明 |
 |------|--------|------|
 | `.github/hooks/` 的用途 | 🟢 高 | 有完整官方文件支持 |
-| `hooks.json` 結構解析 | 🟢 高 | 與官方 schema 對照驗證 |
+| `hooks.json` 結構解析 | 🟢 高 | 已更新為官方標準格式 |
 | `stop-hook.sh` 行為分析 | 🟢 高 | 直接閱讀原始碼得出 |
-| `"Stop"` 事件名稱的有效性 | 🟡 中 | 不在官方事件列表中，可能是 CLI 私有別名或早期格式 |
-| `"command"` 欄位的支援 | 🟡 中 | 官方文件使用 `"bash"`/`"powershell"`，`"command"` 可能是簡化語法 |
-| 改善建議的正確性 | 🟢 高 | 基於最新官方文件 |
+| `hooks.json` 設定正確性 | 🟢 高 | 使用標準 `sessionEnd` 事件與 `bash` 欄位 |
+| 改善建議的正確性 | 🟢 高 | 基於最新官方文件，已全數套用 |
 
 ---
 
