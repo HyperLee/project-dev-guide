@@ -24,6 +24,8 @@ This repository provides reusable GitHub Copilot configuration assets that enfor
     ├── csharp-fleet/
     ├── csharp-xunit/
     └── skill-creator/
+copilot-cli-guide.md           # GitHub Copilot CLI deep-dive tutorial (zh-TW)
+github-hooks.md                # .github/hooks/ detailed reference (zh-TW)
 開發新專案整理.md               # Project initialization reference guide (zh-TW)
 ```
 
@@ -143,6 +145,8 @@ There are a couple of interactive features exposed by the **GitHub Copilot CLI**
   /fleet [PROMPT]
   ```
   where `[PROMPT]` is the instruction you want the fleet to follow.
+
+For a comprehensive deep-dive into Copilot CLI (installation, custom instructions, agents, skills, MCP servers, hooks, extensions, and more), see **[copilot-cli-guide.md](copilot-cli-guide.md)**.
 
 
 ## Requirements
