@@ -13,7 +13,7 @@ Randomly assign one unique model to each agent per session:
 
 | Model | Strength |
 |-------|----------|
-| Claude Opus 4.6 | Security & strict reasoning |
+| Claude Opus 4.7 | Security & strict reasoning |
 | Gemini 3.1 Pro | Creative & system thinking |
 | GPT 5.3-Codex | Coding accuracy & speed |
 | Claude Sonnet 4.6 | Architecture & balance |
