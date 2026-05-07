@@ -2,34 +2,38 @@
 
 ## Project Structure & Module Organization
 
-This repository is a Markdown-first resource collection for GitHub Copilot agents, skills, prompts, hooks, and .NET/C# development guidance.
+This repository is a Markdown-first collection of Copilot assets and .NET/C# guidance.
 
-- `README.md` is the main overview and should stay aligned with major changes.
-- `.github/agents/` contains custom Copilot agent definitions such as `CSharpExpert.agent.md`.
-- `.github/instructions/` stores file-pattern instructions, currently focused on C# conventions.
-- `.github/prompts/` contains reusable prompt templates.
-- `.github/skills/` contains modular skill packages, each with its own `SKILL.md`.
-- `.github/hooks/` contains hook configuration and scripts. Treat `stop-hook.sh` carefully because it can commit and push.
-- `ResearchFolder/` stores longer research notes and reports.
+- `README.md` is the main overview; keep it aligned with major changes.
+- `.github/agents/` contains custom agents such as `CSharpExpert.agent.md`.
+- `.github/instructions/` stores file-pattern instructions; `csharp.instructions.md` applies to `**/*.cs`.
+- `.github/prompts/` stores reusable prompt templates.
+- `.github/skills/` stores modular skill packages with `SKILL.md` entry points.
+- `.github/hooks/` stores hook config and scripts. Treat `stop-hook.sh` carefully because it can commit and push.
+- `ResearchFolder/` stores longer research notes.
 - Root Markdown files such as `project-init.prompt.md` and `開發新專案整理.md` are project-level references.
 
 ## Build, Test, and Development Commands
 
-There is no application build pipeline or package manager configured. Use lightweight repository checks:
+There is no application build pipeline or package manager. Use lightweight checks:
 
-- `rg --files` lists tracked documentation and configuration files quickly.
-- `rg "term" README.md .github ResearchFolder` searches guides, agents, prompts, and research notes.
-- `git diff --check` catches whitespace problems before committing.
+- `rg --files` lists documentation and configuration files.
+- `rg "term" README.md .github ResearchFolder` searches the core guides and assets.
+- `git diff --check` catches whitespace problems.
 - `git status --short` reviews local changes before using hooks or opening a PR.
 
 ## Coding Style & Naming Conventions
 
-Follow `.editorconfig`: spaces are used throughout; JSON, XML, project, and config files use 2-space indentation, while C# examples use 4-space indentation. Keep Markdown headings descriptive and sentence-style content concise. Preserve Traditional Chinese in existing zh-TW documents unless a file is already English or the change requires English. Name agent files with the `.agent.md` suffix, prompt files with `.prompt.md`, and skill directories with a clear lowercase or kebab-case name containing a `SKILL.md`.
+Follow `.editorconfig`: spaces throughout; JSON, XML, project, and config files use 2-space indentation; C# examples use 4 spaces. Keep Markdown headings descriptive and concise. Preserve Traditional Chinese in existing zh-TW documents unless the file is already English or the change requires English. Use `.agent.md` for agents, `.prompt.md` for prompts, and clear lowercase or kebab-case skill directories containing `SKILL.md`.
+
+## C# Instruction Asset Guidance
+
+When changing `.github/instructions/csharp.instructions.md`, keep it as the source of truth for generated/reviewed C# code. Preserve C# 14, file-scoped namespaces, XML docs for public APIs, `nameof`, pattern matching, `is null` / `is not null`, high-confidence review guidance, and the API topics it covers: EF Core, JWT/OIDC auth, validation, RFC 7807, OpenAPI, structured logging, testing, performance, and deployment.
 
 ## Testing Guidelines
 
-No automated tests are defined for this repository. For documentation changes, validate by previewing Markdown, checking links and referenced paths, and running `git diff --check`. For `.github/skills/*/SKILL.md`, confirm examples match the current directory layout. For hook changes, review shell behavior carefully and avoid running scripts that commit or push unless that is intended.
+No automated tests are defined. For documentation changes, preview Markdown, check links and paths, and run `git diff --check`. For `.github/skills/*/SKILL.md` and instruction files, confirm examples match the current layout. For hook changes, review shell behavior carefully and avoid running scripts that commit or push unless intended.
 
 ## Commit & Pull Request Guidelines
 
-Recent history uses concise summaries, often in Traditional Chinese, with occasional prefixes such as `Clarify:` or `翻譯:`. Prefer a short imperative subject, for example `docs: update Copilot skill guide` or `新增 xUnit skill 說明`. PRs should describe the changed documents or Copilot assets, explain why the change is needed, and link related issues or research notes. Include screenshots only when changing rendered Markdown, diagrams, or UI-facing documentation.
+Recent history uses concise summaries, often in Traditional Chinese, with occasional prefixes such as `Clarify:` or `翻譯:`. Prefer a short imperative subject, for example `docs: update Copilot skill guide` or `新增 xUnit skill 說明`. PRs should describe changed documents or assets, explain why, and link related issues or research notes. Include screenshots only for rendered Markdown, diagrams, or UI-facing documentation.
