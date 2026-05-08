@@ -1,5 +1,4 @@
 ﻿---
-agent: 'agent'
 description: Project Initialization
 ---
 
@@ -30,6 +29,14 @@ dotnet new editorconfig
 ```
 
 ---
+
+### 4. 產生 AI 工具初始化設定 
+
+CLI 的 slash command 是 `/init`，可以幫助你快速完成專案的 AI 工具初始化設定。
+
+```text
+/init
+```
 
 > 依照上述步驟逐一執行，確保專案初始化設定完善。
 
