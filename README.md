@@ -124,7 +124,7 @@ Skills 是可按需載入到 Copilot 上下文中的模組化知識套件。
 這會產生：
 
 - 透過 `dotnet new gitignore` 建立 `.gitignore`
-- 使用 UTF-8-BOM 並強制保留結尾換行的 `.editorconfig`
+- 使用 UTF-8 並強制保留結尾換行的 `.editorconfig`
 - 可一鍵除錯的 `launch.json` / `tasks.json`
 
 完整逐步初始化說明請參考 [開發新專案整理.md](開發新專案整理.md)。
